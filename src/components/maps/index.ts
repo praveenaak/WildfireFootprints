@@ -1,3 +1,4 @@
 import MapboxViewer from './MapboxViewer';
+import MultiLocationMapbox from './MultiLocationMapbox';
 
-export { MapboxViewer };
+export { MapboxViewer, MultiLocationMapbox };

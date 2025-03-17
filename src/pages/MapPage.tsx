@@ -1,5 +1,5 @@
 import React from 'react';
-import  MapboxViewer  from '../components/maps/MapboxViewer';
+import MultiLocationMapbox from '../components/maps/MultiLocationMapbox';
 import { MAPBOX_CONFIG } from '../config/mapbox';
 
 const MapPage: React.FC = () => {
@@ -12,8 +12,7 @@ const MapPage: React.FC = () => {
       height: '100vh',
       overflow: 'hidden'
     }}>
-      <MapboxViewer 
-        tilesetId={MAPBOX_CONFIG.defaultTileset}
+      <MultiLocationMapbox 
         center={MAPBOX_CONFIG.defaultCenter}
         zoom={MAPBOX_CONFIG.defaultZoom}
       />

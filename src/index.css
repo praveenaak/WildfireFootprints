@@ -54,3 +54,23 @@ code {
   border-radius: 4px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
+
+/* Location marker styles */
+.location-marker {
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s;
+}
+
+.location-marker:hover {
+  transform: scale(1.2);
+}
+
+/* Marker popup styles */
+.mapboxgl-popup-content {
+  padding: 10px;
+  max-width: 200px;
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 16px;
+}
