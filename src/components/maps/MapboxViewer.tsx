@@ -9,6 +9,8 @@ interface MapboxViewerProps {
   center: [number, number];
   zoom: number;
   style?: React.CSSProperties;
+  minFootprintThreshold?: number; // Add threshold prop with default value in component
+  minPm25Threshold?: number; // Add threshold prop with default value in component
 }
 
 const MapboxViewer: React.FC<MapboxViewerProps> = ({
@@ -16,7 +18,9 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
   tilesetId,
   center,
   zoom,
-  style = { width: '100%', height: '100vh' } // Full screen height
+  style = { width: '100%', height: '100vh' },
+  minFootprintThreshold = 0.0003, // Adjust this value based on your data
+  minPm25Threshold = 0.01 // Adjust this value based on your data
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -69,7 +73,7 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             12, 15
           ],
           'circle-color': [
-            // Using a logarithmic-like scale for values between 0 and 0.027452
+            // Using a logarithmic-like scale for values between minFootprintThreshold and 0.027452
             'interpolate',
             ['linear'],
             // Apply a pseudo-log transformation to the footprint value
@@ -88,8 +92,8 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         layout: {
           visibility: layerType === 'footprint' ? 'visible' : 'none'
         },
-        // Only show points with footprint value > 0
-        filter: ['>', ['get', 'footprint'], 0]
+        // Important: Filter out very low values that appear as white dots
+        filter: ['>', ['get', 'footprint'], minFootprintThreshold]
       });
       
       // Add PM2.5 layer as circle points
@@ -125,8 +129,8 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         layout: {
           visibility: layerType === 'pm25' ? 'visible' : 'none'
         },
-        // Only show points with pm25 value > 0
-        filter: ['>', ['get', 'pm25'], 0]
+        // Important: Filter out very low values that appear as white dots
+        filter: ['>', ['get', 'pm25'], minPm25Threshold]
       });
 
       // Add a legend
@@ -140,7 +144,7 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         map.current = null;
       }
     };
-  }, [accessToken, tilesetId, center, zoom]);
+  }, [accessToken, tilesetId, center, zoom, minFootprintThreshold, minPm25Threshold]);
   
   // Update layer visibility when layer type changes
   useEffect(() => {
@@ -196,8 +200,8 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
     legend.appendChild(title);
     
     if (layerType === 'footprint') {
-      // Footprint legend items
-      const values = [0.001, 0.005, 0.01, 0.015, 0.02, 0.027452];
+      // Footprint legend items - starting from the threshold value
+      const values = [minFootprintThreshold, 0.005, 0.01, 0.015, 0.02, 0.027452];
       const colors = ['#e6f7ff', '#91d5ff', '#4dabf7', '#1890ff', '#0050b3', '#003a8c'];
       
       values.forEach((value, i) => {
@@ -215,15 +219,23 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         
         const valueText = document.createElement('span');
         valueText.style.fontSize = '12px';
-        valueText.textContent = value.toFixed(6);
+        valueText.textContent = value.toExponential(6); // Using exponential notation for clarity
         
         item.appendChild(colorBox);
         item.appendChild(valueText);
         legend.appendChild(item);
       });
+
+      // Add note about threshold
+      const thresholdNote = document.createElement('div');
+      thresholdNote.style.fontSize = '10px';
+      thresholdNote.style.marginTop = '8px';
+      thresholdNote.style.fontStyle = 'italic';
+      thresholdNote.textContent = `Values < ${minFootprintThreshold.toExponential(6)} are filtered out`;
+      legend.appendChild(thresholdNote);
     } else {
       // PM2.5 legend items
-      const values = [0, 12, 35, 55, 75, 100];
+      const values = [minPm25Threshold, 12, 35, 55, 75, 100];
       const colors = ['#e6ffed', '#b7eb8f', '#ffe58f', '#ffbb96', '#ff7875', '#ff4d4f'];
       const labels = ['Very Good', 'Good', 'Moderate', 'Unhealthy for Sensitive', 'Unhealthy', 'Very Unhealthy'];
       
@@ -248,6 +260,14 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         item.appendChild(valueText);
         legend.appendChild(item);
       });
+
+      // Add note about threshold
+      const thresholdNote = document.createElement('div');
+      thresholdNote.style.fontSize = '10px';
+      thresholdNote.style.marginTop = '8px';
+      thresholdNote.style.fontStyle = 'italic';
+      thresholdNote.textContent = `Values < ${minPm25Threshold} are filtered out`;
+      legend.appendChild(thresholdNote);
     }
     
     // Append legend to map container
@@ -259,6 +279,32 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
   // Update the legend when layer type changes
   const updateLegend = () => {
     createLegend();
+  };
+
+  // Function to adjust the threshold values
+  const adjustThreshold = (type: 'increase' | 'decrease') => {
+    if (layerType === 'footprint') {
+      const newThreshold = type === 'increase' 
+        ? minFootprintThreshold * 2
+        : minFootprintThreshold / 2;
+        
+      // Update the filter for the footprint layer
+      if (map.current && map.current.getLayer('footprint-layer')) {
+        map.current.setFilter('footprint-layer', ['>', ['get', 'footprint'], newThreshold]);
+      }
+    } else {
+      const newThreshold = type === 'increase'
+        ? minPm25Threshold * 2
+        : minPm25Threshold / 2;
+        
+      // Update the filter for the pm25 layer
+      if (map.current && map.current.getLayer('pm25-layer')) {
+        map.current.setFilter('pm25-layer', ['>', ['get', 'pm25'], newThreshold]);
+      }
+    }
+    
+    // Update the legend
+    updateLegend();
   };
   
   return (
@@ -303,6 +349,46 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         >
           Show PM2.5
         </button>
+      </div>
+
+      {/* Add threshold adjustment controls */}
+      <div style={{ 
+        position: 'absolute', 
+        top: '60px', 
+        left: '10px', 
+        zIndex: 1,
+        background: 'rgba(255, 255, 255, 0.8)',
+        padding: '10px',
+        borderRadius: '4px'
+      }}>
+        <p style={{ margin: '0 0 5px 0', fontSize: '12px' }}>Adjust Threshold:</p>
+        <div style={{ display: 'flex' }}>
+          <button 
+            onClick={() => adjustThreshold('decrease')}
+            style={{ 
+              padding: '5px 10px',
+              marginRight: '5px',
+              backgroundColor: '#f1f1f1',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Lower
+          </button>
+          <button 
+            onClick={() => adjustThreshold('increase')}
+            style={{ 
+              padding: '5px 10px',
+              backgroundColor: '#f1f1f1',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Raise
+          </button>
+        </div>
       </div>
     </div>
   );

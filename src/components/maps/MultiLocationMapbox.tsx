@@ -15,18 +15,24 @@ interface MultiLocationMapboxProps {
   center: [number, number];
   zoom: number;
   style?: React.CSSProperties;
+  minFootprintThreshold?: number;
+  minPm25Threshold?: number;
 }
 
 const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   accessToken = MAPBOX_CONFIG.accessToken,
   center,
   zoom,
-  style = { width: '100%', height: '100vh' }
+  style = { width: '100%', height: '100vh' },
+  minFootprintThreshold = 0.0001, // Default threshold for footprint
+  minPm25Threshold = 0.01 // Default threshold for PM2.5
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [layerType, setLayerType] = useState<'footprint' | 'pm25'>('footprint');
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [currentFootprintThreshold, setCurrentFootprintThreshold] = useState(minFootprintThreshold);
+  const [currentPm25Threshold, setCurrentPm25Threshold] = useState(minPm25Threshold);
   
   // Parse the coordinates string into Location objects
   const parseCoordinates = (): Location[] => {
@@ -252,10 +258,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       
       // Calculate intermediate steps for footprint color scale
       const footprintMax = ranges.footprint.max;
-      const footprintMin = ranges.footprint.min;
+      const footprintMin = Math.max(ranges.footprint.min, currentFootprintThreshold);
       const footprintStep = (footprintMax - footprintMin) / 5;
       
-      // Add footprint layer with dynamic range
+      // Add footprint layer with dynamic range and threshold filter
       map.current.addLayer({
         id: 'footprint-layer',
         type: 'circle',
@@ -288,14 +294,14 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         layout: {
           visibility: layerType === 'footprint' ? 'visible' : 'none'
         },
-        // Only show points with footprint value > 0
-        filter: ['>', ['get', 'footprint'], 0]
+        // Apply threshold filter to remove very small values
+        filter: ['>', ['get', 'footprint'], currentFootprintThreshold]
       });
       
       // Calculate intermediate steps for PM2.5 color scale
       const pm25Max = ranges.pm25.max;
       
-      // Add PM2.5 layer with dynamic range
+      // Add PM2.5 layer with dynamic range and threshold filter
       map.current.addLayer({
         id: 'pm25-layer',
         type: 'circle',
@@ -314,7 +320,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             'interpolate',
             ['linear'],
             ['get', 'pm25'],
-            0, '#e6ffed',
+            Math.max(0, currentPm25Threshold), '#e6ffed',
             Math.min(12, pm25Max * 0.1), '#b7eb8f',
             Math.min(35, pm25Max * 0.35), '#ffe58f',
             Math.min(55, pm25Max * 0.55), '#ffbb96',
@@ -328,8 +334,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         layout: {
           visibility: layerType === 'pm25' ? 'visible' : 'none'
         },
-        // Only show points with pm25 value > 0
-        filter: ['>', ['get', 'pm25'], 0]
+        // Apply threshold filter to remove very small values
+        filter: ['>', ['get', 'pm25'], currentPm25Threshold]
       });
       
       // Update the legend with the specific ranges for this location
@@ -337,35 +343,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     } catch (err) {
       console.error('Error loading location data:', err);
     }
-  }, [selectedLocation, dataRanges]);
-  
-  // Update layer visibility when layer type changes
-  useEffect(() => {
-    if (!map.current || !map.current.isStyleLoaded() || !selectedLocation) return;
-    
-    try {
-      if (map.current.getLayer('footprint-layer')) {
-        map.current.setLayoutProperty(
-          'footprint-layer',
-          'visibility',
-          layerType === 'footprint' ? 'visible' : 'none'
-        );
-      }
-      
-      if (map.current.getLayer('pm25-layer')) {
-        map.current.setLayoutProperty(
-          'pm25-layer',
-          'visibility',
-          layerType === 'pm25' ? 'visible' : 'none'
-        );
-      }
-      
-      // Update the legend when the layer type changes
-      updateLegend();
-    } catch (err) {
-      console.error('Error updating layer visibility:', err);
-    }
-  }, [layerType]);
+  }, [selectedLocation, dataRanges, layerType, currentFootprintThreshold, currentPm25Threshold]);
   
   // Create a legend for the current layer
   const createLegend = (ranges?: { 
@@ -404,7 +382,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     if (selectedLocation && ranges) {
       if (layerType === 'footprint') {
         // Dynamic footprint legend items based on the location's range
-        const min = ranges.footprint.min;
+        const min = Math.max(ranges.footprint.min, currentFootprintThreshold);
         const max = ranges.footprint.max;
         const step = (max - min) / 5;
         
@@ -441,21 +419,22 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           legend.appendChild(item);
         });
         
-        // Add a note about the location-specific scale
+        // Add information about thresholds
         const note = document.createElement('p');
         note.style.fontSize = '10px';
         note.style.marginTop = '10px';
         note.style.fontStyle = 'italic';
-        note.textContent = `Range: ${min.toExponential(4)} to ${max.toExponential(4)}`;
+        note.textContent = `Values < ${currentFootprintThreshold.toExponential(4)} are filtered out`;
         legend.appendChild(note);
         
       } else {
         // Dynamic PM2.5 legend based on location's range
         const max = ranges.pm25.max;
+        const min = Math.max(0, currentPm25Threshold);
         
         // Create ranges that adapt to the maximum value but preserve EPA breakpoints where possible
         const values = [
-          0,
+          min,
           Math.min(12, max * 0.1),
           Math.min(35, max * 0.35),
           Math.min(55, max * 0.55),
@@ -488,12 +467,12 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           legend.appendChild(item);
         });
         
-        // Add a note about the location-specific scale
+        // Add information about thresholds
         const note = document.createElement('p');
         note.style.fontSize = '10px';
         note.style.marginTop = '10px';
         note.style.fontStyle = 'italic';
-        note.textContent = `Maximum value: ${max.toFixed(1)} μg/m³`;
+        note.textContent = `Values < ${currentPm25Threshold.toFixed(2)} are filtered out`;
         legend.appendChild(note);
       }
     } else {
@@ -521,6 +500,37 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       ranges = dataRanges[locationKey];
     }
     createLegend(ranges);
+  };
+
+  // Function to adjust threshold values
+  const adjustThreshold = (type: 'increase' | 'decrease') => {
+    if (layerType === 'footprint') {
+      // Adjust footprint threshold
+      const newThreshold = type === 'increase' 
+        ? currentFootprintThreshold * 2
+        : currentFootprintThreshold / 2;
+      
+      setCurrentFootprintThreshold(newThreshold);
+      
+      // Update filter if layer exists
+      if (map.current && map.current.getLayer('footprint-layer')) {
+        map.current.setFilter('footprint-layer', ['>', ['get', 'footprint'], newThreshold]);
+        updateLegend();
+      }
+    } else {
+      // Adjust PM2.5 threshold
+      const newThreshold = type === 'increase'
+        ? currentPm25Threshold * 2
+        : currentPm25Threshold / 2;
+      
+      setCurrentPm25Threshold(newThreshold);
+      
+      // Update filter if layer exists
+      if (map.current && map.current.getLayer('pm25-layer')) {
+        map.current.setFilter('pm25-layer', ['>', ['get', 'pm25'], newThreshold]);
+        updateLegend();
+      }
+    }
   };
   
   return (
@@ -609,6 +619,44 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             >
               Back to All Locations
             </button>
+
+            {/* Add threshold controls */}
+            <div style={{ marginTop: '10px', padding: '5px', backgroundColor: 'rgba(240, 240, 240, 0.8)', borderRadius: '4px' }}>
+              <p style={{ margin: '0 0 5px 0', fontSize: '12px' }}>
+                {layerType === 'footprint' 
+                  ? `Footprint Threshold: ${currentFootprintThreshold.toExponential(4)}`
+                  : `PM2.5 Threshold: ${currentPm25Threshold.toFixed(2)}`}
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <button 
+                  onClick={() => adjustThreshold('decrease')}
+                  style={{ 
+                    padding: '5px 10px',
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #ced4da',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px'
+                  }}
+                >
+                  Lower Threshold
+                </button>
+                <button 
+                  onClick={() => adjustThreshold('increase')}
+                  style={{ 
+                    padding: '5px 10px',
+                    backgroundColor: '#f8f9fa',
+                    border: '1px solid #ced4da',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                    marginLeft: '5px'
+                  }}
+                >
+                  Raise Threshold
+                </button>
+              </div>
+            </div>
           </>
         ) : (
           <div style={{ fontSize: '14px' }}>
