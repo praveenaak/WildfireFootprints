@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/WildfireFootprints/static/css/main.0605a25e.css",
+    "main.js": "/WildfireFootprints/static/js/main.1c9abd71.js",
+    "static/js/453.c5f81da7.chunk.js": "/WildfireFootprints/static/js/453.c5f81da7.chunk.js",
+    "index.html": "/WildfireFootprints/index.html",
+    "main.0605a25e.css.map": "/WildfireFootprints/static/css/main.0605a25e.css.map",
+    "main.1c9abd71.js.map": "/WildfireFootprints/static/js/main.1c9abd71.js.map",
+    "453.c5f81da7.chunk.js.map": "/WildfireFootprints/static/js/453.c5f81da7.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0605a25e.css",
+    "static/js/main.1c9abd71.js"
+  ]
+}
