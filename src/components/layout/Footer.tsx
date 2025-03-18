@@ -8,7 +8,6 @@ const Footer: React.FC = () => {
       marginTop: '40px',
       textAlign: 'center'
     }}>
-      <p>Atmospheric Footprint Visualization Tool &copy; {new Date().getFullYear()}</p>
     </footer>
   );
 };
