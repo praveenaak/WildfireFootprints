@@ -17,6 +17,7 @@ interface MultiLocationMapboxProps {
   style?: React.CSSProperties;
   minFootprintThreshold?: number;
   minPm25Threshold?: number;
+  timestamp?: string; // Add timestamp prop
 }
 
 const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
@@ -25,7 +26,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   zoom,
   style = { width: '100%', height: '100vh' },
   minFootprintThreshold = 0.0001, // Default threshold for footprint
-  minPm25Threshold = 0.01 // Default threshold for PM2.5
+  minPm25Threshold = 0.01, // Default threshold for PM2.5
+  timestamp = '08-25-2016 00:00' // Default timestamp
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -180,6 +182,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       
       // Create legend placeholder
       createLegend();
+      
+      // Add timestamp indicator
+      addTimestampIndicator();
     });
     
     // Cleanup
@@ -189,7 +194,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         map.current = null;
       }
     };
-  }, [accessToken, center, zoom]);
+  }, [accessToken, center, zoom, timestamp]);
   
   // Manage marker visibility when a location is selected
   useEffect(() => {
@@ -340,6 +345,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       
       // Update the legend with the specific ranges for this location
       updateLegend(ranges);
+      
+      // Make sure timestamp is visible
+      addTimestampIndicator();
     } catch (err) {
       console.error('Error loading location data:', err);
     }
@@ -530,6 +538,37 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         map.current.setFilter('pm25-layer', ['>', ['get', 'pm25'], newThreshold]);
         updateLegend();
       }
+    }
+  };
+
+  // Add timestamp indicator to the map
+  const addTimestampIndicator = () => {
+    // Remove existing timestamp if any
+    const existingTimestamp = document.getElementById('map-timestamp');
+    if (existingTimestamp) {
+      existingTimestamp.remove();
+    }
+    
+    // Create timestamp container
+    const timestampContainer = document.createElement('div');
+    timestampContainer.id = 'map-timestamp';
+    timestampContainer.style.position = 'absolute';
+    timestampContainer.style.bottom = '10px';
+    timestampContainer.style.left = '10px';
+    timestampContainer.style.padding = '6px 10px';
+    timestampContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    timestampContainer.style.color = 'white';
+    timestampContainer.style.borderRadius = '4px';
+    timestampContainer.style.fontSize = '12px';
+    timestampContainer.style.fontWeight = 'bold';
+    timestampContainer.style.zIndex = '2';
+    
+    // Set the timestamp text
+    timestampContainer.textContent = `Data Timestamp: ${timestamp}`;
+    
+    // Append to map container
+    if (mapContainer.current) {
+      mapContainer.current.appendChild(timestampContainer);
     }
   };
   
