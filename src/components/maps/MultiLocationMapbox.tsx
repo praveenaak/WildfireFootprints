@@ -117,7 +117,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       // In a real app, these would come from an API or data analysis
       const simulatedRanges: {[key: string]: any} = {};
       
-      // Add markers for all locations
+      // Add markers for all 
       locations.forEach((location) => {
         const el = document.createElement('div');
         el.className = 'location-marker';
