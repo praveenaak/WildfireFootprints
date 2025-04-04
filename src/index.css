@@ -1,13 +1,14 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   height: 100%;
   overflow: hidden;
+  letter-spacing: -0.01em;
 }
 
 html {
@@ -27,6 +28,9 @@ code {
     monospace;
 }
 
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 /* Ensure map container takes full height */
 .mapbox-container {
   width: 100%;
@@ -40,7 +44,9 @@ code {
 
 /* Custom legend styles */
 #map-legend {
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Inter', sans-serif;
 }
 
 /* Override default map page padding for full screen */
@@ -57,20 +63,58 @@ code {
 
 /* Location marker styles */
 .location-marker {
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
-  transition: all 0.2s;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  transition: none; /* No transitions for instant positioning */
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
 }
 
+/* Use a different approach for hover effects that won't impact positioning */
 .location-marker:hover {
-  transform: scale(1.2);
+  filter: brightness(1.1) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
 }
 
 /* Marker popup styles */
 .mapboxgl-popup-content {
-  padding: 10px;
+  padding: 12px;
   max-width: 200px;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+}
+
+.location-popup .mapboxgl-popup-content {
+  padding: 10px 12px;
+  font-size: 13px;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+  font-weight: 500;
+  background-color: rgba(22, 28, 45, 0.9) !important;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .mapboxgl-popup-close-button {
   font-size: 16px;
+  color: #fff !important;
+  padding: 4px 8px !important;
+  right: 2px !important;
+  top: 2px !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: rgba(22, 28, 45, 0.9) !important;
+  border-width: 8px !important;
+}
+
+/* Improve marker performance */
+.mapboxgl-marker {
+  transition: none !important;
+  will-change: transform;
+  transform: translate(-50%, -100%); /* Center the marker correctly */
 }

@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+write functional code, avoid unnecessary comments, always comment what the function does
+

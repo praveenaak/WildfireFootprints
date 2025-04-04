@@ -25,7 +25,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   center,
   zoom,
   style = { width: '100%', height: '100vh' },
-  minFootprintThreshold = 0.0001, // Default threshold for footprint
+  minFootprintThreshold = 0.0002, // Default threshold for footprint
   minPm25Threshold = 0.01, // Default threshold for PM2.5
   timestamp = '08-25-2016 00:00' // Default timestamp
 }) => {
@@ -35,10 +35,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [currentFootprintThreshold, setCurrentFootprintThreshold] = useState(minFootprintThreshold);
   const [currentPm25Threshold, setCurrentPm25Threshold] = useState(minPm25Threshold);
+  const [currentZoom, setCurrentZoom] = useState<number>(zoom);
   
   // Parse the coordinates string into Location objects
   const parseCoordinates = (): Location[] => {
-    // This is the list of location strings provided
     const locationStrings = [
       "-101.8504 33.59076", "-104.8286 38.84801", "-104.9876 39.75118", 
       "-105.0797 40.57129", "-105.2634 40.0211", "-106.5012 31.76829", 
@@ -97,7 +97,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       container: mapContainer.current,
       style: MAPBOX_CONFIG.styleUrl,
       center: center,
-      zoom: zoom
+      zoom: zoom,
+      fadeDuration: 0 // Immediately show tiles without fade-in
     });
     
     // Add navigation controls
@@ -105,6 +106,13 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     
     // Add fullscreen control
     map.current.addControl(new mapboxgl.FullscreenControl());
+    
+    // Track zoom level changes
+    map.current.on('zoom', () => {
+      if (map.current) {
+        setCurrentZoom(Math.round(map.current.getZoom() * 10) / 10);
+      }
+    });
     
     // Initialize map with markers when it loads
     map.current.on('load', () => {
@@ -121,23 +129,22 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       locations.forEach((location) => {
         const el = document.createElement('div');
         el.className = 'location-marker';
-        el.style.width = '15px';
-        el.style.height = '15px';
-        el.style.borderRadius = '50%';
-        el.style.backgroundColor = '#3498db';
-        el.style.border = '2px solid white';
+        el.style.width = '25px';
+        el.style.height = '41px';
+        el.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%234dabf7%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+        el.style.backgroundSize = 'cover';
         el.style.cursor = 'pointer';
+        // Remove any transition effects to make positioning instant
+        el.style.transition = 'none';
         
         // Generate location key for data ranges
         const locationKey = `${location.lng}_${location.lat}`;
         
-        // Create simulated data ranges for this location
-        // In a real implementation, these would be fetched from an API
         simulatedRanges[locationKey] = {
           footprint: {
             // Generate variable ranges for different locations
             min: 0.0001,
-            max: 0.01 + (Math.random() * 0.04) // Random max between 0.01 and 0.05
+            max: 0.04 // Fixed maximum of 0.04
           },
           pm25: {
             min: 0,
@@ -145,15 +152,15 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           }
         };
         
-        // Create a popup but don't add it to the map yet
-        const popup = new mapboxgl.Popup({ offset: 25 }).setText(
-          `Location: ${location.lng.toFixed(4)}, ${location.lat.toFixed(4)}`
-        );
-        
-        // Create the marker
-        const marker = new mapboxgl.Marker(el)
+        // Create the marker with the custom element and disable animation
+        const marker = new mapboxgl.Marker({
+          element: el,
+          // Setting anchor to bottom center to align with pin location
+          anchor: 'bottom',
+          // Offset the marker to position correctly with the pin point
+          offset: [0, 0]
+        })
           .setLngLat([location.lng, location.lat])
-          .setPopup(popup)
           .addTo(map.current!);
         
         // Store the marker reference
@@ -172,7 +179,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           map.current?.flyTo({
             center: [location.lng, location.lat],
             zoom: 7,
-            essential: true
+            essential: true,
+            speed: 1.8, 
+            curve: 1,
+            easing: t => t // Use linear easing for faster zooming
           });
         });
       });
@@ -196,6 +206,23 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     };
   }, [accessToken, center, zoom, timestamp]);
   
+  // Add effect to update timestamp display whenever zoom changes
+  useEffect(() => {
+    addTimestampIndicator();
+  }, [currentZoom]);
+
+  // Update legend whenever layer type changes
+  useEffect(() => {
+    if (selectedLocation) {
+      const locationKey = `${selectedLocation.lng}_${selectedLocation.lat}`;
+      const ranges = {
+        footprint: { min: 0.0002, max: 0.04 },
+        pm25: { min: 0, max: 100 }
+      };
+      createLegend(ranges, layerType);
+    }
+  }, [layerType]);
+  
   // Manage marker visibility when a location is selected
   useEffect(() => {
     if (!markersRef.current.length) return;
@@ -205,9 +232,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       markersRef.current.forEach(({ marker, element, location }) => {
         if (location.lat === selectedLocation.lat && location.lng === selectedLocation.lng) {
           // Keep the selected marker visible
-          element.style.backgroundColor = '#f39c12'; // Change color to indicate selection
-          element.style.width = '18px';
-          element.style.height = '18px';
+          element.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23ff9500%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+          element.style.width = '30px';
+          element.style.height = '49px';
           element.style.zIndex = '100';
         } else {
           // Hide other markers
@@ -218,9 +245,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       // Show all markers when no location is selected
       markersRef.current.forEach(({ marker, element, location }) => {
         // Reset marker style
-        element.style.backgroundColor = '#3498db';
-        element.style.width = '15px';
-        element.style.height = '15px';
+        element.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%234dabf7%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+        element.style.width = '25px';
+        element.style.height = '41px';
         
         // Add marker back to map if it's not already there
         if (!marker.getElement().isConnected) {
@@ -249,8 +276,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     
     // Get data ranges for this location
     const locationKey = `${selectedLocation.lng}_${selectedLocation.lat}`;
-    const ranges = dataRanges[locationKey] || {
-      footprint: { min: 0.0001, max: 0.03 },
+    const ranges = {
+      footprint: { min: 0.0002, max: 0.04 },
       pm25: { min: 0, max: 100 }
     };
     
@@ -262,7 +289,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       });
       
       // Calculate intermediate steps for footprint color scale
-      const footprintMax = ranges.footprint.max;
+      const footprintMax = 0.04; // Fixed maximum
       const footprintMin = Math.max(ranges.footprint.min, currentFootprintThreshold);
       const footprintStep = (footprintMax - footprintMin) / 5;
       
@@ -275,11 +302,13 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         paint: {
           'circle-radius': [
             'interpolate',
-            ['linear'],
+            ['exponential', 2],
             ['zoom'],
-            5, 3,
-            8, 8,
-            12, 15
+            4, 2,
+            5, 5,
+            6, 7,
+            7, 10,
+            8, 20,
           ],
           'circle-color': [
             'interpolate',
@@ -292,19 +321,18 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             footprintMin + (4 * footprintStep), '#0050b3',
             footprintMax, '#003a8c'
           ],
-          'circle-opacity': 0.9,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': 'rgba(255, 255, 255, 0.5)'
+          'circle-opacity': 0.85,
+          'circle-blur': 0.2,
+          'circle-stroke-color': 'rgba(255, 255, 255, 0.3)'
         },
         layout: {
           visibility: layerType === 'footprint' ? 'visible' : 'none'
         },
-        // Apply threshold filter to remove very small values
-        filter: ['>', ['get', 'footprint'], currentFootprintThreshold]
+        filter: ['all', 
+          ['>', ['get', 'footprint'], currentFootprintThreshold], 
+          ['>', ['get', 'footprint'], 0]
+        ]
       });
-      
-      // Calculate intermediate steps for PM2.5 color scale
-      const pm25Max = ranges.pm25.max;
       
       // Add PM2.5 layer with dynamic range and threshold filter
       map.current.addLayer({
@@ -317,47 +345,49 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             'interpolate',
             ['linear'],
             ['zoom'],
-            5, 3,
-            8, 8,
-            12, 15
+            5, 12,
+            8, 20,
+            12, 35
           ],
           'circle-color': [
             'interpolate',
             ['linear'],
             ['get', 'pm25'],
             Math.max(0, currentPm25Threshold), '#e6ffed',
-            Math.min(12, pm25Max * 0.1), '#b7eb8f',
-            Math.min(35, pm25Max * 0.35), '#ffe58f',
-            Math.min(55, pm25Max * 0.55), '#ffbb96',
-            Math.min(75, pm25Max * 0.75), '#ff7875',
-            pm25Max, '#ff4d4f'
+            Math.min(12, ranges.pm25.max * 0.1), '#b7eb8f',
+            Math.min(35, ranges.pm25.max * 0.35), '#ffe58f',
+            Math.min(55, ranges.pm25.max * 0.55), '#ffbb96',
+            Math.min(75, ranges.pm25.max * 0.75), '#ff7875',
+            ranges.pm25.max, '#ff4d4f'
           ],
-          'circle-opacity': 0.9,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': 'rgba(255, 255, 255, 0.5)'
+          'circle-opacity': 0.85,
+          'circle-blur': 0.5,
+          'circle-stroke-width': 0.5,
+          'circle-stroke-color': 'rgba(255, 255, 255, 0.3)'
         },
         layout: {
           visibility: layerType === 'pm25' ? 'visible' : 'none'
         },
-        // Apply threshold filter to remove very small values
-        filter: ['>', ['get', 'pm25'], currentPm25Threshold]
+        filter: ['>', ['get', 'pm25'], 0]
       });
       
       // Update the legend with the specific ranges for this location
-      updateLegend(ranges);
+      createLegend(ranges, layerType);
       
       // Make sure timestamp is visible
       addTimestampIndicator();
     } catch (err) {
       console.error('Error loading location data:', err);
     }
-  }, [selectedLocation, dataRanges, layerType, currentFootprintThreshold, currentPm25Threshold]);
+  }, [selectedLocation, layerType, currentFootprintThreshold, currentPm25Threshold]);
   
   // Create a legend for the current layer
   const createLegend = (ranges?: { 
     footprint: {min: number, max: number}, 
     pm25: {min: number, max: number} 
-  }) => {
+  }, forcedLayerType?: 'footprint' | 'pm25') => {
+    // Use the forced layer type if provided, otherwise use the current state
+    const displayLayerType = forcedLayerType || layerType;
     if (!map.current) return;
     
     // Remove existing legend if any
@@ -371,24 +401,29 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     legend.id = 'map-legend';
     legend.style.position = 'absolute';
     legend.style.bottom = '30px';
-    legend.style.right = '10px';
-    legend.style.padding = '10px';
-    legend.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-    legend.style.borderRadius = '4px';
+    legend.style.right = '20px';
+    legend.style.padding = '15px';
+    legend.style.backgroundColor = 'rgba(22, 28, 45, 0.8)';
+    legend.style.color = 'white';
+    legend.style.borderRadius = '8px';
+    legend.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
     legend.style.zIndex = '1';
-    legend.style.maxWidth = '180px';
+    legend.style.maxWidth = '220px';
     
     // Add legend title
     const title = document.createElement('h4');
-    title.style.margin = '0 0 10px 0';
-    title.style.fontSize = '14px';
+    title.style.margin = '0 0 12px 0';
+    title.style.fontSize = '16px';
+    title.style.fontWeight = '600';
+    title.style.borderBottom = '1px solid rgba(255,255,255,0.2)';
+    title.style.paddingBottom = '8px';
     title.textContent = selectedLocation 
-      ? (layerType === 'footprint' ? 'Footprint Scale' : 'PM2.5 Scale (μg/m³)')
-      : 'Click a marker to view data';
+      ? (displayLayerType === 'footprint' ? 'Footprint Scale' : 'PM2.5 Scale (μg/m³)')
+      : 'Data Legend';
     legend.appendChild(title);
     
     if (selectedLocation && ranges) {
-      if (layerType === 'footprint') {
+      if (displayLayerType === 'footprint') {
         // Dynamic footprint legend items based on the location's range
         const min = Math.max(ranges.footprint.min, currentFootprintThreshold);
         const max = ranges.footprint.max;
@@ -405,33 +440,39 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         
         const colors = ['#e6f7ff', '#91d5ff', '#4dabf7', '#1890ff', '#0050b3', '#003a8c'];
         
+        const legendGrid = document.createElement('div');
+        legendGrid.style.display = 'grid';
+        legendGrid.style.gridTemplateColumns = '24px 1fr';
+        legendGrid.style.gap = '8px 10px';
+        legendGrid.style.alignItems = 'center';
+        legendGrid.style.marginBottom = '10px';
+        
         values.forEach((value, i) => {
-          const item = document.createElement('div');
-          item.style.display = 'flex';
-          item.style.alignItems = 'center';
-          item.style.marginBottom = '5px';
-          
           const colorBox = document.createElement('span');
-          colorBox.style.width = '20px';
-          colorBox.style.height = '20px';
+          colorBox.style.width = '24px';
+          colorBox.style.height = '24px';
           colorBox.style.backgroundColor = colors[i];
-          colorBox.style.display = 'inline-block';
-          colorBox.style.marginRight = '5px';
+          colorBox.style.display = 'block';
+          colorBox.style.borderRadius = '4px';
           
           const valueText = document.createElement('span');
-          valueText.style.fontSize = '12px';
+          valueText.style.fontSize = '13px';
           valueText.textContent = value.toExponential(4); // Using exponential notation for clearer display
           
-          item.appendChild(colorBox);
-          item.appendChild(valueText);
-          legend.appendChild(item);
+          legendGrid.appendChild(colorBox);
+          legendGrid.appendChild(valueText);
         });
+        
+        legend.appendChild(legendGrid);
         
         // Add information about thresholds
         const note = document.createElement('p');
-        note.style.fontSize = '10px';
-        note.style.marginTop = '10px';
-        note.style.fontStyle = 'italic';
+        note.style.fontSize = '12px';
+        note.style.marginTop = '12px';
+        note.style.opacity = '0.8';
+        note.style.padding = '8px';
+        note.style.backgroundColor = 'rgba(255,255,255,0.1)';
+        note.style.borderRadius = '4px';
         note.textContent = `Values < ${currentFootprintThreshold.toExponential(4)} are filtered out`;
         legend.appendChild(note);
         
@@ -453,63 +494,100 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         const colors = ['#e6ffed', '#b7eb8f', '#ffe58f', '#ffbb96', '#ff7875', '#ff4d4f'];
         const labels = ['Very Good', 'Good', 'Moderate', 'Unhealthy for Sensitive', 'Unhealthy', 'Very Unhealthy'];
         
+        const legendGrid = document.createElement('div');
+        legendGrid.style.display = 'grid';
+        legendGrid.style.gridTemplateColumns = '24px 1fr';
+        legendGrid.style.gap = '8px 10px';
+        legendGrid.style.alignItems = 'center';
+        legendGrid.style.marginBottom = '10px';
+        
         values.forEach((value, i) => {
-          const item = document.createElement('div');
-          item.style.display = 'flex';
-          item.style.alignItems = 'center';
-          item.style.marginBottom = '5px';
-          
           const colorBox = document.createElement('span');
-          colorBox.style.width = '20px';
-          colorBox.style.height = '20px';
+          colorBox.style.width = '24px';
+          colorBox.style.height = '24px';
           colorBox.style.backgroundColor = colors[i];
-          colorBox.style.display = 'inline-block';
-          colorBox.style.marginRight = '5px';
+          colorBox.style.display = 'block';
+          colorBox.style.borderRadius = '4px';
           
           const valueText = document.createElement('span');
-          valueText.style.fontSize = '12px';
-          valueText.textContent = `${value.toFixed(1)}${i < values.length - 1 ? `-${values[i+1].toFixed(1)}` : '+'}: ${labels[i]}`;
+          valueText.style.fontSize = '13px';
+          valueText.style.lineHeight = '1.3';
           
-          item.appendChild(colorBox);
-          item.appendChild(valueText);
-          legend.appendChild(item);
+          // Format the range text
+          let rangeText = '';
+          if (i === values.length - 1) {
+            rangeText = `${value.toFixed(1)}+`;
+          } else {
+            rangeText = `${value.toFixed(1)} - ${values[i + 1].toFixed(1)}`;
+          }
+          
+          valueText.innerHTML = `${rangeText}<br><span style="opacity:0.8">${labels[i]}</span>`;
+          
+          legendGrid.appendChild(colorBox);
+          legendGrid.appendChild(valueText);
         });
+        
+        legend.appendChild(legendGrid);
         
         // Add information about thresholds
         const note = document.createElement('p');
-        note.style.fontSize = '10px';
-        note.style.marginTop = '10px';
-        note.style.fontStyle = 'italic';
-        note.textContent = `Values < ${currentPm25Threshold.toFixed(2)} are filtered out`;
+        note.style.fontSize = '12px';
+        note.style.marginTop = '12px';
+        note.style.opacity = '0.8';
+        note.style.padding = '8px';
+        note.style.backgroundColor = 'rgba(255,255,255,0.1)';
+        note.style.borderRadius = '4px';
+        note.textContent = `Values < ${currentPm25Threshold.toExponential(4)} are filtered out`;
         legend.appendChild(note);
       }
-    } else {
-      // Instructions when no location is selected
-      const infoText = document.createElement('p');
-      infoText.style.fontSize = '12px';
-      infoText.style.margin = '0';
-      infoText.textContent = 'Select a marker on the map to view footprint or PM2.5 data for that location.';
-      legend.appendChild(infoText);
     }
-    
+
     // Append legend to map container
     if (mapContainer.current) {
       mapContainer.current.appendChild(legend);
     }
   };
   
-  // Update the legend when layer type or selected location changes
-  const updateLegend = (ranges?: { 
-    footprint: {min: number, max: number}, 
-    pm25: {min: number, max: number} 
-  }) => {
-    if (selectedLocation && !ranges) {
-      const locationKey = `${selectedLocation.lng}_${selectedLocation.lat}`;
-      ranges = dataRanges[locationKey];
+  // Add timestamp indicator
+  const addTimestampIndicator = () => {
+    if (!map.current) return;
+    
+    // Remove existing timestamp if any
+    const existingTimestamp = document.getElementById('map-timestamp');
+    if (existingTimestamp) {
+      existingTimestamp.remove();
     }
-    createLegend(ranges);
+    
+    // Create timestamp container
+    const timestampContainer = document.createElement('div');
+    timestampContainer.id = 'map-timestamp';
+    timestampContainer.style.position = 'absolute';
+    timestampContainer.style.bottom = '30px';
+    timestampContainer.style.left = '20px';
+    timestampContainer.style.padding = '10px 16px';
+    timestampContainer.style.backgroundColor = 'rgba(22, 28, 45, 0.85)';
+    timestampContainer.style.color = 'white';
+    timestampContainer.style.borderRadius = '10px';
+    timestampContainer.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
+    timestampContainer.style.zIndex = '1';
+    timestampContainer.style.maxWidth = '220px';
+    timestampContainer.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+    timestampContainer.style.fontFamily = "'Inter', sans-serif";
+    timestampContainer.style.backdropFilter = 'blur(8px)';
+    
+    // Add timestamp text
+    const timestampText = document.createElement('span');
+    timestampText.style.fontSize = '13px';
+    timestampText.style.fontWeight = '600';
+    timestampText.textContent = timestamp;
+    timestampContainer.appendChild(timestampText);
+    
+    // Add timestamp to map container
+    if (mapContainer.current) {
+      mapContainer.current.appendChild(timestampContainer);
+    }
   };
-
+  
   // Function to adjust threshold values
   const adjustThreshold = (type: 'increase' | 'decrease') => {
     if (layerType === 'footprint') {
@@ -523,7 +601,11 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       // Update filter if layer exists
       if (map.current && map.current.getLayer('footprint-layer')) {
         map.current.setFilter('footprint-layer', ['>', ['get', 'footprint'], newThreshold]);
-        updateLegend();
+        const ranges = {
+          footprint: { min: 0.0002, max: 0.04 },
+          pm25: { min: 0, max: 100 }
+        };
+        createLegend(ranges, layerType);
       }
     } else {
       // Adjust PM2.5 threshold
@@ -536,176 +618,253 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       // Update filter if layer exists
       if (map.current && map.current.getLayer('pm25-layer')) {
         map.current.setFilter('pm25-layer', ['>', ['get', 'pm25'], newThreshold]);
-        updateLegend();
+        const ranges = {
+          footprint: { min: 0.0002, max: 0.04 },
+          pm25: { min: 0, max: 100 }
+        };
+        createLegend(ranges, layerType);
       }
     }
   };
 
-  // Add timestamp indicator to the map
-  const addTimestampIndicator = () => {
-    // Remove existing timestamp if any
-    const existingTimestamp = document.getElementById('map-timestamp');
-    if (existingTimestamp) {
-      existingTimestamp.remove();
-    }
-    
-    // Create timestamp container
-    const timestampContainer = document.createElement('div');
-    timestampContainer.id = 'map-timestamp';
-    timestampContainer.style.position = 'absolute';
-    timestampContainer.style.bottom = '10px';
-    timestampContainer.style.left = '10px';
-    timestampContainer.style.padding = '6px 10px';
-    timestampContainer.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-    timestampContainer.style.color = 'white';
-    timestampContainer.style.borderRadius = '4px';
-    timestampContainer.style.fontSize = '12px';
-    timestampContainer.style.fontWeight = 'bold';
-    timestampContainer.style.zIndex = '2';
-    
-    // Set the timestamp text
-    timestampContainer.textContent = `Data Timestamp: ${timestamp}`;
-    
-    // Append to map container
-    if (mapContainer.current) {
-      mapContainer.current.appendChild(timestampContainer);
-    }
-  };
-  
   return (
     <div className="mapbox-container" style={{ position: 'relative', width: '100%', height: '100vh' }}>
       <div ref={mapContainer} style={style} />
       
       <div style={{ 
         position: 'absolute', 
-        top: '10px', 
-        left: '10px', 
+        top: '20px', 
+        left: '50%', 
+        transform: 'translateX(-50%)',
         zIndex: 1,
-        background: 'rgba(255, 255, 255, 0.8)',
-        padding: '10px',
-        borderRadius: '4px'
+        background: 'rgba(22, 28, 45, 0.85)',
+        padding: '16px',
+        borderRadius: '12px',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+        color: 'white',
+        maxWidth: '320px',
+        backdropFilter: 'blur(8px)',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        fontFamily: "'Inter', sans-serif"
       }}>
         {selectedLocation ? (
-          <>
-            <div style={{ marginBottom: '10px', fontSize: '14px' }}>
-              <strong>Selected Location:</strong> {selectedLocation.lng.toFixed(4)}, {selectedLocation.lat.toFixed(4)}
-            </div>
-            <button 
-              onClick={() => setLayerType('footprint')}
-              style={{ 
-                fontWeight: layerType === 'footprint' ? 'bold' : 'normal',
-                marginRight: '10px',
-                padding: '8px 16px',
-                backgroundColor: layerType === 'footprint' ? '#3498db' : '#f1f1f1',
-                color: layerType === 'footprint' ? 'white' : 'black',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Show Footprint
-            </button>
-            <button 
-              onClick={() => setLayerType('pm25')}
-              style={{ 
-                fontWeight: layerType === 'pm25' ? 'bold' : 'normal',
-                padding: '8px 16px',
-                backgroundColor: layerType === 'pm25' ? '#3498db' : '#f1f1f1',
-                color: layerType === 'pm25' ? 'white' : 'black',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Show PM2.5
-            </button>
-            <button 
-              onClick={() => {
-                // Clear data layers before resetting
-                if (map.current) {
-                  // Remove layers if they exist
-                  if (map.current.getLayer('footprint-layer')) {
-                    map.current.removeLayer('footprint-layer');
-                  }
-                  
-                  if (map.current.getLayer('pm25-layer')) {
-                    map.current.removeLayer('pm25-layer');
-                  }
-                  
-                  if (map.current.getSource('footprint-data')) {
-                    map.current.removeSource('footprint-data');
-                  }
-                  
-                  // Reset the view to show all locations
-                  map.current.flyTo({
-                    center: center,
-                    zoom: zoom,
-                    essential: true
-                  });
-                }
-                
-                // Reset selected location
-                setSelectedLocation(null);
-              }}
-              style={{ 
-                marginLeft: '10px',
-                padding: '8px 16px',
-                backgroundColor: '#f1f1f1',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}
-            >
-              Back to All Locations
-            </button>
-
-            {/* Add threshold controls */}
-            <div style={{ marginTop: '10px', padding: '5px', backgroundColor: 'rgba(240, 240, 240, 0.8)', borderRadius: '4px' }}>
-              <p style={{ margin: '0 0 5px 0', fontSize: '12px' }}>
-                {layerType === 'footprint' 
-                  ? `Footprint Threshold: ${currentFootprintThreshold.toExponential(4)}`
-                  : `PM2.5 Threshold: ${currentPm25Threshold.toFixed(2)}`}
-              </p>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <button 
-                  onClick={() => adjustThreshold('decrease')}
-                  style={{ 
-                    padding: '5px 10px',
-                    backgroundColor: '#f8f9fa',
-                    border: '1px solid #ced4da',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '12px'
-                  }}
-                >
-                  Lower Threshold
-                </button>
-                <button 
-                  onClick={() => adjustThreshold('increase')}
-                  style={{ 
-                    padding: '5px 10px',
-                    backgroundColor: '#f8f9fa',
-                    border: '1px solid #ced4da',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    marginLeft: '5px'
-                  }}
-                >
-                  Raise Threshold
-                </button>
-              </div>
-            </div>
-          </>
+          <div style={{ fontSize: '16px' }}>
+            <strong>Selected Location:</strong> {selectedLocation.lng.toFixed(4)}, {selectedLocation.lat.toFixed(4)}
+          </div>
         ) : (
-          <div style={{ fontSize: '14px' }}>
-            <strong>Atmospheric Footprint Map</strong>
-            <p style={{ margin: '5px 0 0 0', fontSize: '12px' }}>
-              Click on a marker to view detailed footprint and PM2.5 data for that location.
+          <div>
+            <h2 style={{ fontSize: '18px', margin: '0 0 10px 0', fontWeight: '600' }}>Wildfire Footprint Visualizer</h2>
+            <p style={{ margin: '0 0 15px 0', fontSize: '14px', lineHeight: '1.4', opacity: '0.8' }}>
+              This interactive map shows atmospheric footprint and PM2.5 data from wildfires across multiple locations.
+            </p>
+            <p style={{ margin: '0', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '6px', lineHeight: '1.4' }}>
+              Click on any blue marker to view detailed data for that specific location.
             </p>
           </div>
         )}
       </div>
+
+      {selectedLocation && (
+        <div style={{ 
+          position: 'absolute', 
+          top: '20px', 
+          left: '20px', 
+          zIndex: 1,
+          background: 'rgba(22, 28, 45, 0.85)',
+          padding: '16px',
+          borderRadius: '12px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+          color: 'white',
+          maxWidth: '320px',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          fontFamily: "'Inter', sans-serif"
+        }}>
+          <button 
+            onClick={() => {
+              // Clear data layers before resetting
+              if (map.current) {
+                // Remove layers if they exist
+                if (map.current.getLayer('footprint-layer')) {
+                  map.current.removeLayer('footprint-layer');
+                }
+                
+                if (map.current.getLayer('pm25-layer')) {
+                  map.current.removeLayer('pm25-layer');
+                }
+                
+                if (map.current.getSource('footprint-data')) {
+                  map.current.removeSource('footprint-data');
+                }
+                
+                // Reset the view to show all locations
+                map.current.jumpTo({
+                  center: center,
+                  zoom: zoom
+                });
+              }
+              
+              // Reset selected location
+              setSelectedLocation(null);
+            }}
+            style={{ 
+              width: '100%',
+              padding: '12px 0',
+              backgroundColor: '#ff9500',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '600',
+              boxShadow: '0 2px 6px rgba(255, 149, 0, 0.3)',
+              cursor: 'pointer',
+              fontSize: '14px',
+              transition: 'all 0.2s ease',
+              marginBottom: '15px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
+            }}
+          >
+            <span style={{ fontSize: '18px' }}>↩</span> Back to All Locations
+          </button>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+            <button 
+              onClick={() => {
+                setLayerType('footprint');
+                
+                // Calculate the bounds of visible data points
+                if (map.current && map.current.getLayer('footprint-layer')) {
+                  // First show the footprint layer
+                  map.current.setLayoutProperty('footprint-layer', 'visibility', 'visible');
+                  if (map.current.getLayer('pm25-layer')) {
+                    map.current.setLayoutProperty('pm25-layer', 'visibility', 'none');
+                  }
+                  
+                  // Zoom out to fit all visible points
+                  if (selectedLocation) {
+                    // Fit to the current data extent by using a slightly larger zoom level
+                    map.current.jumpTo({
+                      center: [selectedLocation.lng, selectedLocation.lat],
+                      zoom: 6 // Zoom out a bit to show the full footprint
+                    });
+                  }
+                }
+              }}
+              style={{ 
+                flex: 1,
+                fontWeight: '600',
+                padding: '12px 0',
+                backgroundColor: layerType === 'footprint' ? '#4dabf7' : 'rgba(255,255,255,0.1)',
+                color: 'white',
+                border: layerType === 'footprint' ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: layerType === 'footprint' ? '0 2px 8px rgba(77, 171, 247, 0.3)' : 'none'
+              }}
+            >
+              Footprint Data
+            </button>
+            <button 
+              onClick={() => {
+                setLayerType('pm25');
+                
+                // Calculate the bounds of visible data points
+                if (map.current && map.current.getLayer('pm25-layer')) {
+                  // First show the PM2.5 layer
+                  map.current.setLayoutProperty('pm25-layer', 'visibility', 'visible');
+                  if (map.current.getLayer('footprint-layer')) {
+                    map.current.setLayoutProperty('footprint-layer', 'visibility', 'none');
+                  }
+                  
+                  // Zoom out to fit all visible points
+                  if (selectedLocation) {
+                    // Fit to the current data extent by using a slightly larger zoom level
+                    map.current.jumpTo({
+                      center: [selectedLocation.lng, selectedLocation.lat],
+                      zoom: 6 // Zoom out a bit to show the full PM2.5 extent
+                    });
+                  }
+                }
+              }}
+              style={{ 
+                flex: 1,
+                fontWeight: '600',
+                padding: '12px 0',
+                backgroundColor: layerType === 'pm25' ? '#4dabf7' : 'rgba(255,255,255,0.1)',
+                color: 'white',
+                border: layerType === 'pm25' ? '1px solid rgba(255,255,255,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: layerType === 'pm25' ? '0 2px 8px rgba(77, 171, 247, 0.3)' : 'none'
+              }}
+            >
+              Convolved
+            </button>
+          </div>
+
+          {/* Add threshold controls */}
+          <div style={{ 
+            marginBottom: '16px', 
+            padding: '14px', 
+            backgroundColor: 'rgba(255, 255, 255, 0.1)', 
+            borderRadius: '10px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+            border: '1px solid rgba(255, 255, 255, 0.05)'
+          }}>
+            {layerType === 'footprint' ? (
+              <>
+                <p style={{ margin: '0', fontSize: '14px', fontWeight: '500' }}>
+                  Footprint Threshold: {currentFootprintThreshold.toExponential(4)}
+                </p>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button 
+                    onClick={() => adjustThreshold('decrease')}
+                    style={{ 
+                      flex: 1,
+                      padding: '8px 0',
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    Lower Threshold
+                  </button>
+                  <button 
+                    onClick={() => adjustThreshold('increase')}
+                    style={{ 
+                      flex: 1,
+                      padding: '8px 0',
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    Raise Threshold
+                  </button>
+                </div>
+              </>
+            ) : (
+              <p style={{ margin: '0', fontSize: '14px', fontWeight: '500', textAlign: 'center' }}>
+                Showing PM2.5 in Convolved Footprints + Emissions
+              </p>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
