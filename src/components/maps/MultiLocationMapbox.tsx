@@ -36,6 +36,27 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   const [currentFootprintThreshold, setCurrentFootprintThreshold] = useState(minFootprintThreshold);
   const [currentPm25Threshold, setCurrentPm25Threshold] = useState(minPm25Threshold);
   const [currentZoom, setCurrentZoom] = useState<number>(zoom);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  // Parse the timestamp for default date
+  const formatInitialDate = () => {
+    try {
+      const parts = timestamp.split(' ')[0].split('-');
+      if (parts.length === 3) {
+        // Format MM-DD-YYYY to YYYYMMDD
+        return `${parts[2]}${parts[0]}${parts[1]}`;
+      }
+      // Fallback to default
+      return '20160801';
+    } catch (e) {
+      return '20160801';
+    }
+  };
+
+  const [currentDate, setCurrentDate] = useState(formatInitialDate());
+  const animationRef = useRef<number | null>(null);
+  // Reference to track the current playing state to avoid closure issues
+  const isPlayingRef = useRef(false);
   
   // Parse the coordinates string into Location objects
   const parseCoordinates = (): Location[] => {
@@ -58,7 +79,17 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       const lng = parseFloat(lngStr);
       const lat = parseFloat(latStr);
       
-      // Format the tilesetId according to the convention (remove minus sign, add underscore)
+      // Special case for the time series data location
+      if (lng === -101.8504 && lat === 33.59076) {
+        return { 
+          lat, 
+          lng, 
+          tilesetId: 'pkulandh.2016__101_8504_33_59076', 
+          layerName: 'tmp_zu_cizy' 
+        };
+      }
+      
+      // Format the tilesetId according to the convention for other locations
       const formattedLng = Math.abs(lng).toString().replace('.', '_');
       const formattedLat = lat.toString().replace('.', '_');
       const tilesetId = `pkulandh.wf_${formattedLng}_${formattedLat}`;
@@ -131,7 +162,59 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         el.className = 'location-marker';
         el.style.width = '25px';
         el.style.height = '41px';
-        el.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%234dabf7%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+        
+        // Use a different color for the marker with time series data
+        if (location.lng === -101.8504 && location.lat === 33.59076) {
+          el.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23ff6700%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+          
+          // Add a permanent label below the marker
+          const label = document.createElement('div');
+          label.style.position = 'absolute';
+          label.style.top = '42px';
+          label.style.left = '50%';
+          label.style.transform = 'translateX(-50%)';
+          label.style.backgroundColor = 'rgba(22, 28, 45, 0.85)';
+          label.style.color = 'white';
+          label.style.padding = '3px 6px';
+          label.style.borderRadius = '4px';
+          label.style.fontSize = '10px';
+          label.style.fontWeight = 'bold';
+          label.style.whiteSpace = 'nowrap';
+          label.style.pointerEvents = 'none';
+          label.textContent = 'Time Series';
+          label.style.border = '1px solid #ff6700';
+          el.appendChild(label);
+          
+          // Add tooltip on hover
+          const tooltip = document.createElement('div');
+          tooltip.style.position = 'absolute';
+          tooltip.style.bottom = '42px';
+          tooltip.style.left = '50%';
+          tooltip.style.transform = 'translateX(-50%)';
+          tooltip.style.backgroundColor = 'rgba(22, 28, 45, 0.85)';
+          tooltip.style.color = 'white';
+          tooltip.style.padding = '4px 8px';
+          tooltip.style.borderRadius = '4px';
+          tooltip.style.fontSize = '11px';
+          tooltip.style.fontWeight = 'bold';
+          tooltip.style.whiteSpace = 'nowrap';
+          tooltip.style.pointerEvents = 'none';
+          tooltip.textContent = 'Time Series Data';
+          tooltip.style.opacity = '0';
+          tooltip.style.transition = 'opacity 0.2s';
+          el.appendChild(tooltip);
+          
+          el.addEventListener('mouseenter', () => {
+            tooltip.style.opacity = '1';
+          });
+          
+          el.addEventListener('mouseleave', () => {
+            tooltip.style.opacity = '0';
+          });
+        } else {
+          el.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%234dabf7%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+        }
+        
         el.style.backgroundSize = 'cover';
         el.style.cursor = 'pointer';
         // Remove any transition effects to make positioning instant
@@ -172,6 +255,20 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         
         // Add click event to marker
         el.addEventListener('click', () => {
+          // Stop any existing animation
+          if (isPlaying && animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+            animationRef.current = null;
+            setIsPlaying(false);
+          }
+          
+          // Reset current date for time series location
+          if (location.lng === -101.8504 && location.lat === 33.59076) {
+            console.log('Setting initial date for time series location');
+            // Set to 2016-08-01 for the special location
+            setCurrentDate('20160801');
+          }
+          
           // Set the selected location
           setSelectedLocation(location);
           
@@ -232,7 +329,13 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       markersRef.current.forEach(({ marker, element, location }) => {
         if (location.lat === selectedLocation.lat && location.lng === selectedLocation.lng) {
           // Keep the selected marker visible
-          element.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23ff9500%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+          if (location.lng === -101.8504 && location.lat === 33.59076) {
+            // Use orange color for the time series data marker
+            element.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23ff6700%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+          } else {
+            // Use yellow color for other selected markers
+            element.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23ff9500%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+          }
           element.style.width = '30px';
           element.style.height = '49px';
           element.style.zIndex = '100';
@@ -245,7 +348,13 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       // Show all markers when no location is selected
       markersRef.current.forEach(({ marker, element, location }) => {
         // Reset marker style
-        element.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%234dabf7%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+        if (location.lng === -101.8504 && location.lat === 33.59076) {
+          // Maintain orange color for time series data marker
+          element.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23ff6700%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+        } else {
+          // Use blue color for other markers
+          element.style.backgroundImage = "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%234dabf7%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')";
+        }
         element.style.width = '25px';
         element.style.height = '41px';
         
@@ -313,7 +422,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           'circle-color': [
             'interpolate',
             ['linear'],
-            ['get', 'footprint'],
+            // Check if 'value' property exists, otherwise use 'footprint'
+            ['coalesce', ['get', 'value'], ['get', 'footprint']],
             footprintMin, '#e6f7ff',
             footprintMin + footprintStep, '#91d5ff',
             footprintMin + (2 * footprintStep), '#4dabf7',
@@ -328,10 +438,16 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         layout: {
           visibility: layerType === 'footprint' ? 'visible' : 'none'
         },
-        filter: ['all', 
-          ['>', ['get', 'footprint'], currentFootprintThreshold], 
-          ['>', ['get', 'footprint'], 0]
-        ]
+        filter: selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076 
+          // For the time series location, filter by both value and date
+          ? ['all', 
+              ['>', ['get', 'value'], currentFootprintThreshold],
+              ['==', ['get', 'date'], currentDate.substring(0, 4) + '-' + 
+                                  currentDate.substring(4, 6) + '-' + 
+                                  currentDate.substring(6, 8)]
+            ]
+          // For other locations, just filter by footprint threshold
+          : ['>', ['coalesce', ['get', 'footprint'], 0], currentFootprintThreshold]
       });
       
       // Add PM2.5 layer with dynamic range and threshold filter
@@ -575,11 +691,35 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     timestampContainer.style.fontFamily = "'Inter', sans-serif";
     timestampContainer.style.backdropFilter = 'blur(8px)';
     
+    // Check if we're showing the special time series location
+    const isTimeSeriesActive = selectedLocation && 
+      selectedLocation.lng === -101.8504 && 
+      selectedLocation.lat === 33.59076 && 
+      isPlaying;
+
     // Add timestamp text
     const timestampText = document.createElement('span');
     timestampText.style.fontSize = '13px';
     timestampText.style.fontWeight = '600';
-    timestampText.textContent = timestamp;
+    
+    if (isTimeSeriesActive) {
+      // Show the current date from time series
+      const formattedDate = `${currentDate.substring(4, 6)}/${currentDate.substring(6, 8)}/${currentDate.substring(0, 4)}`;
+      timestampText.textContent = formattedDate;
+      
+      // Add animation indicator
+      const animationDot = document.createElement('span');
+      animationDot.style.display = 'inline-block';
+      animationDot.style.marginLeft = '8px';
+      animationDot.style.color = '#ff6700';
+      animationDot.style.fontSize = '16px';
+      animationDot.textContent = '●';
+      timestampText.appendChild(animationDot);
+    } else {
+      // Use static timestamp
+      timestampText.textContent = timestamp;
+    }
+    
     timestampContainer.appendChild(timestampText);
     
     // Add timestamp to map container
@@ -600,7 +740,22 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       
       // Update filter if layer exists
       if (map.current && map.current.getLayer('footprint-layer')) {
-        map.current.setFilter('footprint-layer', ['>', ['get', 'footprint'], newThreshold]);
+        if (selectedLocation && selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076) {
+          // Format date as YYYY-MM-DD for the filter
+          const formattedDateForFilter = currentDate.substring(0, 4) + '-' + 
+                                         currentDate.substring(4, 6) + '-' + 
+                                         currentDate.substring(6, 8);
+          
+          // For time series data
+          map.current.setFilter('footprint-layer', ['all',
+            ['>', ['get', 'value'], newThreshold],
+            ['==', ['get', 'date'], formattedDateForFilter]
+          ]);
+        } else {
+          // For regular footprint data
+          map.current.setFilter('footprint-layer', ['>', ['coalesce', ['get', 'footprint'], 0], newThreshold]);
+        }
+        
         const ranges = {
           footprint: { min: 0.0002, max: 0.04 },
           pm25: { min: 0, max: 100 }
@@ -627,6 +782,136 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     }
   };
 
+  // Function to stop animation
+  const stopAnimation = () => {
+    if (animationRef.current) {
+      console.log('Stopping animation, canceling frame:', animationRef.current);
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    isPlayingRef.current = false;
+    setIsPlaying(false);
+  };
+
+  // Function to handle play/pause animation
+  const toggleAnimation = () => {
+    console.log('Toggle animation called, current state:', isPlaying);
+    
+    if (isPlaying) {
+      // Stop animation
+      console.log('Animation stopping...');
+      stopAnimation();
+    } else {
+      // Start animation
+      console.log('Animation starting...');
+      isPlayingRef.current = true;
+      setIsPlaying(true);
+    }
+  };
+
+  // Function to start the animation
+  const startAnimation = () => {
+    console.log('startAnimation called, isPlaying:', isPlaying);
+    
+    if (!isPlaying || !selectedLocation || !map.current) {
+      console.log('Animation not started - missing prerequisites');
+      return;
+    }
+
+    // Update the ref with current state
+    isPlayingRef.current = isPlaying;
+
+    // Define date range
+    const startDate = new Date('2016-08-01');
+    const endDate = new Date('2016-10-01');
+    
+    // Parse the current date from state
+    const currentDateParts = [
+      currentDate.substring(0, 4),
+      currentDate.substring(4, 6),
+      currentDate.substring(6, 8)
+    ];
+    
+    let currentDateObj = new Date(`${currentDateParts[0]}-${currentDateParts[1]}-${currentDateParts[2]}`);
+    console.log('Animation starting with date:', currentDateObj.toISOString().split('T')[0]);
+    
+    const animate = () => {
+      // Check if we should continue animating using the ref for most current value
+      if (!isPlayingRef.current || !selectedLocation || !map.current) {
+        console.log('Animation frame cancelled due to state change');
+        return;
+      }
+
+      // Increment date by one day
+      currentDateObj.setDate(currentDateObj.getDate() + 1);
+      
+      // Check if we've reached the end date
+      if (currentDateObj > endDate) {
+        currentDateObj = new Date(startDate);
+      }
+
+      // Format date as YYYY-MM-DD for the filter
+      const formattedDateForFilter = currentDateObj.toISOString().slice(0, 10);
+      
+      // Update internal state (YYYYMMDD format)
+      const formattedDate = formattedDateForFilter.replace(/-/g, '');
+      setCurrentDate(formattedDate);
+      
+      console.log(`Animating to date: ${formattedDateForFilter}`);
+
+      // Update filter to show data for this date
+      if (map.current.getLayer('footprint-layer')) {
+        const filter = ['all',
+          ['>', ['get', 'value'], currentFootprintThreshold],
+          ['==', ['get', 'date'], formattedDateForFilter]
+        ];
+        
+        map.current.setFilter('footprint-layer', filter);
+      }
+      
+      // Update the timestamp indicator
+      addTimestampIndicator();
+
+      // Schedule next animation frame with a delay
+      if (isPlayingRef.current) { // Check using the ref
+        setTimeout(() => {
+          if (isPlayingRef.current) { // Triple-check using the ref
+            animationRef.current = requestAnimationFrame(animate);
+          }
+        }, 500);
+      }
+    };
+
+    // Start the animation loop
+    animationRef.current = requestAnimationFrame(animate);
+  };
+
+  // Start animation when isPlaying state becomes true
+  useEffect(() => {
+    console.log('isPlaying changed to:', isPlaying);
+    
+    if (isPlaying && selectedLocation) {
+      console.log('Starting animation');
+      startAnimation();
+    } else if (!isPlaying) {
+      console.log('Stopping any ongoing animation');
+      stopAnimation();
+    }
+  }, [isPlaying, selectedLocation]);
+
+  // Cleanup animation on unmount
+  useEffect(() => {
+    return () => {
+      console.log('Component unmounting, stopping animation');
+      stopAnimation();
+    };
+  }, []);
+
+  // Update timestamp when playing state changes
+  useEffect(() => {
+    addTimestampIndicator();
+  }, [isPlaying, currentDate]);
+
   return (
     <div className="mapbox-container" style={{ position: 'relative', width: '100%', height: '100vh' }}>
       <div ref={mapContainer} style={style} />
@@ -650,6 +935,53 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         {selectedLocation ? (
           <div style={{ fontSize: '16px' }}>
             <strong>Selected Location:</strong> {selectedLocation.lng.toFixed(4)}, {selectedLocation.lat.toFixed(4)}
+            {selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076 && (
+              <div style={{ marginTop: '10px' }}>
+                <div style={{ 
+                  marginBottom: '10px',
+                  padding: '10px',
+                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  borderRadius: '6px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <strong>Current Date:</strong> 
+                  <span>
+                    {`${currentDate.substring(4, 6)}/${currentDate.substring(6, 8)}/${currentDate.substring(0, 4)}`}
+                    {isPlaying && <span style={{ marginLeft: '8px', color: '#ff6700' }}>●</span>}
+                  </span>
+                </div>
+                <button
+                  onClick={toggleAnimation}
+                  style={{
+                    width: '100%',
+                    padding: '10px 16px',
+                    backgroundColor: isPlaying ? '#ff4d4f' : '#52c41a',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontWeight: '600',
+                    fontSize: '14px'
+                  }}
+                >
+                  {isPlaying ? (
+                    <>
+                      <span style={{ fontSize: '16px' }}>⏸</span> Pause Animation
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ fontSize: '16px' }}>▶</span> Play Animation
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div>
@@ -657,9 +989,30 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             <p style={{ margin: '0 0 15px 0', fontSize: '14px', lineHeight: '1.4', opacity: '0.8' }}>
               This interactive map shows atmospheric footprint and PM2.5 data from wildfires across multiple locations.
             </p>
-            <p style={{ margin: '0', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '6px', lineHeight: '1.4' }}>
+            <p style={{ margin: '0 0 10px 0', fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.1)', padding: '10px', borderRadius: '6px', lineHeight: '1.4' }}>
               Click on any blue marker to view detailed data for that specific location.
             </p>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '10px', 
+              margin: '0', 
+              fontSize: '14px', 
+              backgroundColor: 'rgba(255, 103, 0, 0.2)', 
+              padding: '10px', 
+              borderRadius: '6px', 
+              lineHeight: '1.4' 
+            }}>
+              <div style={{ 
+                width: '16px', 
+                height: '26px', 
+                backgroundImage: "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23ff6700%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')",
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat',
+                flexShrink: 0
+              }} />
+              <span>The <strong>orange marker</strong> has time series data from Aug-Oct 2016 that can be animated.</span>
+            </div>
           </div>
         )}
       </div>
@@ -863,6 +1216,55 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               </p>
             )}
           </div>
+
+          {/* Add debug button for checking dates */}
+          <button
+            onClick={() => {
+              // Toggle debug mode
+              const debugInfo = {
+                currentDate,
+                formattedDate: `${currentDate.substring(0, 4)}-${currentDate.substring(4, 6)}-${currentDate.substring(6, 8)}`,
+                isPlaying,
+                animationActive: !!animationRef.current,
+                animationRef: animationRef.current,
+                location: selectedLocation,
+                tilesetId: selectedLocation?.tilesetId,
+                layerName: selectedLocation?.layerName
+              };
+              console.log('Debug Info:', debugInfo);
+              
+              // Check tileset data for the current date
+              if (map.current && map.current.getLayer('footprint-layer')) {
+                const formattedDateForFilter = `${currentDate.substring(0, 4)}-${currentDate.substring(4, 6)}-${currentDate.substring(6, 8)}`;
+                console.log(`Checking for data on date: ${formattedDateForFilter}`);
+                
+                // If animation is not working, try manual filter update
+                if (selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076) {
+                  const filter = ['all',
+                    ['>', ['get', 'value'], currentFootprintThreshold],
+                    ['==', ['get', 'date'], formattedDateForFilter]
+                  ];
+                  console.log('Applying filter manually:', filter);
+                  map.current.setFilter('footprint-layer', filter);
+                  // Force update of timestamp display
+                  addTimestampIndicator();
+                }
+              }
+            }}
+            style={{
+              width: '100%',
+              marginTop: '8px',
+              padding: '6px',
+              backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '12px'
+            }}
+          >
+            Debug/Force Update
+          </button>
         </div>
       )}
     </div>
