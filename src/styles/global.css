@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600&display=swap');
+
+:root {
+  /* Colors */
+  --color-obsidian: #1a1a1a;
+  --color-tan: #cea25d;
+  --color-sage: #99aa88;
+  --color-green: #2d595a;
+  --color-white: #f9f6ef;
+  --color-mahogany: #751d0c;
+  --color-blue: #789bd8;
+  --color-rust: #dd3b00;
+
+  /* Typography */
+  --font-family: 'Sora', sans-serif;
+  --font-size-body: 9pt;
+  --font-size-h1: 36pt;
+  --font-size-h2: 20pt;
+  --font-size-h3: 15pt;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+  color: var(--color-obsidian);
+  background-color: var(--color-white);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-family);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+}
+
+h3 {
+  font-size: var(--font-size-h3);
+}
+
+/* Utility Classes */
+.text-center {
+  text-align: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  :root {
+    --font-size-h1: 28pt;
+    --font-size-h2: 18pt;
+    --font-size-h3: 14pt;
+  }
+} 

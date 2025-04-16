@@ -1,35 +1,35 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { routes } from './routes';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
+import IntroPage from './components/IntroPage';
+import MultiLocationMapbox from './components/maps/MultiLocationMapbox';
+import { MAPBOX_CONFIG } from './config/mapbox';
+import GlobalStyles from './styles/GlobalStyles';
 
-function App() {
-  // Get the base path for GitHub Pages deployment
-  // When deployed to GitHub Pages, the app is served from /repository-name
-  const basePath = process.env.NODE_ENV === 'production' 
-    ? '/WildfireFootprints' 
-    : '';
+// Main App component that handles routing between intro and map
+const App: React.FC = () => {
+  const [showMap, setShowMap] = useState(false);
+
+  const handleIntroComplete = () => {
+    setShowMap(true);
+  };
+
+  if (!showMap) {
+    return <IntroPage onComplete={handleIntroComplete} />;
+  }
 
   return (
-    <div className="app">
-      <BrowserRouter basename={basePath}>
-        <Header />
-        <main>
-          <Routes>
-            {routes.map((route, index) => (
-              <Route
-                key={index}
-                path={route.path}
-                element={route.element}
-              />
-            ))}
-          </Routes>
-        </main>
-        <Footer />
-      </BrowserRouter>
-    </div>
+    <>
+      <GlobalStyles />
+      <MultiLocationMapbox
+        accessToken={MAPBOX_CONFIG.accessToken}
+        center={[-110.0, 39.5]}
+        zoom={4.5}
+      />
+    </>
   );
-}
+};
 
 export default App;

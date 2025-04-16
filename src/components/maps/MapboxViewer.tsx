@@ -13,6 +13,13 @@ interface MapboxViewerProps {
   minPm25Threshold?: number; // Add threshold prop with default value in component
 }
 
+interface SelectedLocation {
+  footprint: number;
+  pm25: number;
+  longitude: number;
+  latitude: number;
+}
+
 const MapboxViewer: React.FC<MapboxViewerProps> = ({
   accessToken = MAPBOX_CONFIG.accessToken,
   tilesetId,
@@ -24,7 +31,10 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const popup = useRef<mapboxgl.Popup | null>(null);
+  const hoverPopup = useRef<mapboxgl.Popup | null>(null);
   const [layerType, setLayerType] = useState<'footprint' | 'pm25'>('footprint');
+  const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   
   // Initialize map when component mounts
   useEffect(() => {
@@ -92,7 +102,6 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         layout: {
           visibility: layerType === 'footprint' ? 'visible' : 'none'
         },
-        // Important: Filter out very low values that appear as white dots
         filter: ['>', ['get', 'footprint'], minFootprintThreshold]
       });
       
@@ -129,8 +138,167 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         layout: {
           visibility: layerType === 'pm25' ? 'visible' : 'none'
         },
-        // Important: Filter out very low values that appear as white dots
         filter: ['>', ['get', 'pm25'], minPm25Threshold]
+      });
+
+      // Initialize hover popup
+      hoverPopup.current = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+      });
+
+      // Change cursor when user hovers over either layer
+      map.current.on('mouseenter', 'footprint-layer', () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = 'pointer';
+        }
+      });
+
+      map.current.on('mouseenter', 'pm25-layer', () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = 'pointer';
+        }
+      });
+
+      // Change cursor back when user leaves either layer
+      map.current.on('mouseleave', 'footprint-layer', () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = '';
+        }
+        // Also remove hover popup when leaving the point
+        hoverPopup.current?.remove();
+      });
+
+      map.current.on('mouseleave', 'pm25-layer', () => {
+        if (map.current) {
+          map.current.getCanvas().style.cursor = '';
+        }
+        // Also remove hover popup when leaving the point
+        hoverPopup.current?.remove();
+      });
+
+      // Add mousemove event for hover effect
+      map.current.on('mousemove', (e) => {
+        if (!map.current || selectedLocation) return;
+
+        const features = map.current.queryRenderedFeatures(e.point, {
+          layers: ['footprint-layer', 'pm25-layer']
+        });
+
+        // Clear existing hover popup when moving away from point
+        if (!features.length) {
+          hoverPopup.current?.remove();
+          return;
+        }
+
+        const feature = features[0];
+        const props = feature.properties;
+        
+        // Ensure we properly parse the numeric properties
+        const footprint = props?.footprint ? parseFloat(props.footprint) : null;
+        const pm25 = props?.pm25 ? parseFloat(props.pm25) : null;
+        
+        if (footprint === null || pm25 === null) return;
+
+        // Create popup content
+        const popupContent = `
+          <div style="padding: 8px;">
+            <p style="margin: 0 0 5px 0;"><strong>Footprint:</strong> ${footprint.toExponential(6)}</p>
+            <p style="margin: 0;"><strong>PM2.5:</strong> ${pm25} μg/m³</p>
+            <p style="margin: 5px 0 0 0; font-size: 10px; font-style: italic;">Click for more details</p>
+          </div>
+        `;
+
+        // Position the popup at the coordinates of the point
+        hoverPopup.current
+          ?.setLngLat(e.lngLat)
+          .setHTML(popupContent)
+          .addTo(map.current);
+      });
+
+      // Remove the general click handler and add specific click handlers for each layer
+      // Add click handler for footprint layer
+      map.current.on('click', 'footprint-layer', (e) => {
+        if (!e.features || e.features.length === 0) return;
+        
+        const feature = e.features[0];
+        const props = feature.properties;
+        
+        const footprint = props?.footprint ? parseFloat(props.footprint) : null;
+        const pm25 = props?.pm25 ? parseFloat(props.pm25) : null;
+        
+        if (footprint === null || pm25 === null) {
+          console.error('Invalid feature properties:', props);
+          return;
+        }
+
+        if (selectedLocation) {
+          // If clicking the same location, clear selection
+          if (selectedLocation.footprint === footprint && 
+              selectedLocation.pm25 === pm25) {
+            setSelectedLocation(null);
+            return;
+          }
+        }
+
+        // Set new selected location
+        setSelectedLocation({
+          footprint: footprint,
+          pm25: pm25,
+          longitude: e.lngLat.lng,
+          latitude: e.lngLat.lat
+        });
+        
+        // Remove hover popup when selecting a point
+        hoverPopup.current?.remove();
+      });
+
+      // Add click handler for pm25 layer
+      map.current.on('click', 'pm25-layer', (e) => {
+        if (!e.features || e.features.length === 0) return;
+        
+        const feature = e.features[0];
+        const props = feature.properties;
+        
+        const footprint = props?.footprint ? parseFloat(props.footprint) : null;
+        const pm25 = props?.pm25 ? parseFloat(props.pm25) : null;
+        
+        if (footprint === null || pm25 === null) {
+          console.error('Invalid feature properties:', props);
+          return;
+        }
+
+        if (selectedLocation) {
+          // If clicking the same location, clear selection
+          if (selectedLocation.footprint === footprint && 
+              selectedLocation.pm25 === pm25) {
+            setSelectedLocation(null);
+            return;
+          }
+        }
+
+        // Set new selected location
+        setSelectedLocation({
+          footprint: footprint,
+          pm25: pm25,
+          longitude: e.lngLat.lng,
+          latitude: e.lngLat.lat
+        });
+        
+        // Remove hover popup when selecting a point
+        hoverPopup.current?.remove();
+      });
+
+      // Add click handler for map background to clear selection
+      map.current.on('click', (e) => {
+        const features = map.current?.queryRenderedFeatures(e.point, {
+          layers: ['footprint-layer', 'pm25-layer']
+        });
+
+        // Only clear selection if clicking outside any point
+        if (!features || features.length === 0) {
+          setSelectedLocation(null);
+        }
       });
 
       // Add a legend
@@ -169,6 +337,117 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
       console.error('Error updating layer visibility:', err);
     }
   }, [layerType]);
+
+  // Update filters when selected location changes
+  useEffect(() => {
+    if (!map.current || !map.current.isStyleLoaded()) return;
+
+    // Remove existing popup if any
+    if (popup.current) {
+      popup.current.remove();
+      popup.current = null;
+    }
+
+    // If a location is selected, only show that marker
+    // Otherwise show all markers above threshold
+    if (selectedLocation) {
+      try {
+        // Create a new source just for the selected feature
+        if (map.current.getSource('selected-point')) {
+          map.current.removeLayer('selected-point-layer');
+          map.current.removeSource('selected-point');
+        }
+        
+        // Add a new source with just the selected marker
+        map.current.addSource('selected-point', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [selectedLocation.longitude, selectedLocation.latitude]
+            },
+            properties: {
+              footprint: selectedLocation.footprint,
+              pm25: selectedLocation.pm25
+            }
+          }
+        });
+        
+        // Add a new layer for the selected point
+        map.current.addLayer({
+          id: 'selected-point-layer',
+          type: 'circle',
+          source: 'selected-point',
+          paint: {
+            'circle-radius': 15,
+            'circle-color': layerType === 'footprint' ? '#1890ff' : '#ff7875',
+            'circle-opacity': 0.9,
+            'circle-stroke-width': 3,
+            'circle-stroke-color': 'white'
+          }
+        });
+        
+        // Hide all other markers
+        map.current.setLayoutProperty('footprint-layer', 'visibility', 'none');
+        map.current.setLayoutProperty('pm25-layer', 'visibility', 'none');
+        
+        // Fly to the selected location with animation
+        map.current.flyTo({
+          center: [selectedLocation.longitude, selectedLocation.latitude],
+          zoom: 10,
+          duration: 1000
+        });
+        
+        // Create a detailed popup for the selected location
+        popup.current = new mapboxgl.Popup({ closeOnClick: false })
+          .setLngLat([selectedLocation.longitude, selectedLocation.latitude])
+          .setHTML(`
+            <div style="padding: 12px;">
+              <h3 style="margin: 0 0 8px 0;">Selected Location</h3>
+              <p style="margin: 0 0 5px 0;"><strong>Footprint:</strong> ${selectedLocation.footprint.toExponential(6)}</p>
+              <p style="margin: 0 0 5px 0;"><strong>PM2.5:</strong> ${selectedLocation.pm25} μg/m³</p>
+              <p style="margin: 0 0 5px 0;"><strong>Coordinates:</strong> [${selectedLocation.longitude.toFixed(5)}, ${selectedLocation.latitude.toFixed(5)}]</p>
+              <p style="margin: 5px 0 0 0; font-size: 11px; font-style: italic;">Click anywhere else to clear selection</p>
+            </div>
+          `)
+          .addTo(map.current);
+          
+      } catch (err) {
+        console.error('Error updating for selected location:', err);
+      }
+    } else {
+      // When no location is selected, remove the selected point layer and source
+      try {
+        if (map.current.getLayer('selected-point-layer')) {
+          map.current.removeLayer('selected-point-layer');
+        }
+        
+        if (map.current.getSource('selected-point')) {
+          map.current.removeSource('selected-point');
+        }
+        
+        // Show the appropriate layer based on layer type
+        map.current.setLayoutProperty(
+          'footprint-layer',
+          'visibility',
+          layerType === 'footprint' ? 'visible' : 'none'
+        );
+        
+        map.current.setLayoutProperty(
+          'pm25-layer',
+          'visibility',
+          layerType === 'pm25' ? 'visible' : 'none'
+        );
+        
+        // Apply the threshold filters
+        map.current.setFilter('footprint-layer', ['>', ['get', 'footprint'], minFootprintThreshold]);
+        map.current.setFilter('pm25-layer', ['>', ['get', 'pm25'], minPm25Threshold]);
+      } catch (err) {
+        console.error('Error resetting view:', err);
+      }
+    }
+  }, [selectedLocation, minFootprintThreshold, minPm25Threshold, layerType]);
 
   // Create a legend for the current layer
   const createLegend = () => {
@@ -231,7 +510,6 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
       thresholdNote.style.fontSize = '10px';
       thresholdNote.style.marginTop = '8px';
       thresholdNote.style.fontStyle = 'italic';
-      thresholdNote.textContent = `Values < ${minFootprintThreshold.toExponential(6)} are filtered out`;
       legend.appendChild(thresholdNote);
     } else {
       // PM2.5 legend items
@@ -266,7 +544,6 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
       thresholdNote.style.fontSize = '10px';
       thresholdNote.style.marginTop = '8px';
       thresholdNote.style.fontStyle = 'italic';
-      thresholdNote.textContent = `Values < ${minPm25Threshold} are filtered out`;
       legend.appendChild(thresholdNote);
     }
     
@@ -389,6 +666,24 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             Raise
           </button>
         </div>
+      </div>
+      
+      {/* Add info text */}
+      <div style={{
+        position: 'absolute',
+        bottom: '80px',
+        left: '10px',
+        zIndex: 1,
+        background: 'rgba(255, 255, 255, 0.8)',
+        padding: '10px',
+        borderRadius: '4px',
+        maxWidth: '250px',
+        fontSize: '12px'
+      }}>
+        <p style={{ margin: '0', fontWeight: 'bold' }}>Point Interaction:</p>
+        <p style={{ margin: '5px 0 0 0' }}>• Hover over points to see their values</p>
+        <p style={{ margin: '5px 0 0 0' }}>• Click a point to select it and view detailed information</p>
+        <p style={{ margin: '5px 0 0 0' }}>• Click elsewhere to clear the selection</p>
       </div>
     </div>
   );
