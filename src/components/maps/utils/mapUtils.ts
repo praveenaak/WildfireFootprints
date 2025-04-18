@@ -48,25 +48,51 @@ export const parseCoordinates = (): Location[] => {
   });
 };
 
+// Date constants
+const DEFAULT_DATE = '20160801';
+
 // Format date for display
 export const formatDate = (dateString: string): string => {
+  if (!dateString || dateString.length !== 8) {
+    return '';
+  }
   return `${dateString.substring(4, 6)}/${dateString.substring(6, 8)}/${dateString.substring(0, 4)}`;
 };
 
 // Format date for filter
 export const formatDateForFilter = (dateString: string): string => {
-  return `${dateString.substring(0, 4)}-${dateString.substring(4, 6)}-${dateString.substring(6, 8)}`;
+  // Handle ISO format (YYYY-MM-DD)
+  if (dateString.includes('-') && dateString.length === 10) {
+    return dateString;
+  }
+  
+  // Handle YYYYMMDD format
+  if (dateString.length === 8) {
+    return `${dateString.substring(0, 4)}-${dateString.substring(4, 6)}-${dateString.substring(6, 8)}`;
+  }
+  
+  // Invalid format
+  console.warn('Invalid date format:', dateString);
+  return '2016-08-01';
 };
 
 // Parse initial timestamp
 export const formatInitialDate = (timestamp: string): string => {
   try {
+    // Check if timestamp is already in YYYYMMDD format
+    if (timestamp.length === 8 && !timestamp.includes('-') && !timestamp.includes(' ')) {
+      return timestamp;
+    }
+    
+    // Handle MM-DD-YYYY format
     const parts = timestamp.split(' ')[0].split('-');
     if (parts.length === 3) {
       return `${parts[2]}${parts[0]}${parts[1]}`; // Format MM-DD-YYYY to YYYYMMDD
     }
-    return '20160801'; // Fallback to default
+    
+    return DEFAULT_DATE; // Fallback to default
   } catch (e) {
-    return '20160801';
+    console.warn('Error parsing timestamp:', e);
+    return DEFAULT_DATE;
   }
 }; 

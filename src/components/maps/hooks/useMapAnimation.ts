@@ -46,11 +46,12 @@ export const useMapAnimation = ({
 
     isPlayingRef.current = isPlaying;
 
-    // Define date range
-    const startDate = new Date('2016-08-01');
-    const endDate = new Date('2016-10-01');
+    // Define date range - constants to avoid recreating on each animation frame
+    const START_DATE = new Date('2016-08-01');
+    const END_DATE = new Date('2016-10-01');
+    const ANIMATION_DELAY = 500; // ms between frames
     
-    // Parse the current date
+    // Parse the current date once
     const currentDateParts = [
       currentDate.substring(0, 4),
       currentDate.substring(4, 6),
@@ -68,40 +69,49 @@ export const useMapAnimation = ({
       currentDateObj.setDate(currentDateObj.getDate() + 1);
       
       // Reset to start if we reach the end
-      if (currentDateObj > endDate) {
-        currentDateObj = new Date(startDate);
+      if (currentDateObj > END_DATE) {
+        currentDateObj = new Date(START_DATE);
       }
 
-      // Format date for filter
-      const formattedDateForFilter = formatDateForFilter(currentDateObj.toISOString().slice(0, 10));
+      // Format date for filter - extract to single operation
+      const isoDate = currentDateObj.toISOString().slice(0, 10);
+      const formattedDateForFilter = formatDateForFilter(isoDate);
+      const formattedDate = formattedDateForFilter.replace(/-/g, '');
       
       // Update internal state (YYYYMMDD format)
-      const formattedDate = formattedDateForFilter.replace(/-/g, '');
       setCurrentDate(formattedDate);
 
-      // Update filter to show data for this date
-      if (map.current.getLayer('footprint-layer')) {
-        const filter = ['all',
-          ['>', ['get', 'value'], currentFootprintThreshold],
-          ['==', ['get', 'date'], formattedDateForFilter]
-        ];
-        
-        map.current.setFilter('footprint-layer', filter);
+      // Only update filter if the layer exists to avoid errors
+      if (map.current && map.current.getLayer('footprint-layer')) {
+        try {
+          const filter = ['all',
+            ['>', ['get', 'value'], currentFootprintThreshold],
+            ['==', ['get', 'date'], formattedDateForFilter]
+          ];
+          
+          map.current.setFilter('footprint-layer', filter);
+          
+          // Update the timestamp indicator after filter is updated
+          addTimestampIndicator();
+        } catch (error) {
+          console.error('Error updating map filter:', error);
+        }
       }
-      
-      // Update the timestamp indicator
-      addTimestampIndicator();
 
-      // Schedule next animation frame with a delay
+      // Use consistent timing with setTimeout
       if (isPlayingRef.current) {
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           if (isPlayingRef.current) {
             animationRef.current = requestAnimationFrame(animate);
           }
-        }, 500);
+        }, ANIMATION_DELAY);
+        
+        // Store timeout ID for cleanup
+        return () => clearTimeout(timeoutId);
       }
     };
 
+    // Start the animation
     animationRef.current = requestAnimationFrame(animate);
   };
 
@@ -116,20 +126,22 @@ export const useMapAnimation = ({
   };
 
   // Start animation when isPlaying state becomes true
+  // Handle animation state changes
   useEffect(() => {
     if (isPlaying && selectedLocation) {
       startAnimation();
     } else if (!isPlaying) {
       stopAnimation();
     }
-  }, [isPlaying, selectedLocation]);
-
-  // Cleanup animation on unmount
-  useEffect(() => {
+    
+    // Cleanup animation on component unmount or when animation state changes
     return () => {
       stopAnimation();
     };
-  }, []);
+    // We intentionally omit startAnimation and stopAnimation as dependencies
+    // since they would cause this effect to re-run unnecessarily
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPlaying, selectedLocation]);
 
   return {
     toggleAnimation,

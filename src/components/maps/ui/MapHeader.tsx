@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import styled from 'styled-components';
 import { Location } from '../types';
-import { formatDate } from '../utils/mapUtils';
+// Import needed components
+import { colors, typography, spacing, borderRadius, shadows, zIndices } from '../../../styles/theme';
 
 interface MapHeaderProps {
   selectedLocation: Location | null;
@@ -9,68 +11,88 @@ interface MapHeaderProps {
   currentDate: string;
 }
 
-// Map header component
+// Styled components
+const HeaderContainer = styled.div`
+  position: absolute;
+  top: ${spacing.lg};
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: ${zIndices.mapOverlays};
+  font-family: ${typography.fontFamily};
+  color: ${colors.textPrimary};
+`;
+
+const HeaderPanel = styled.div`
+  padding: ${spacing.md};
+  background-color: ${colors.backgroundTertiary};
+  border-radius: ${borderRadius.lg};
+  display: flex;
+  flex-direction: column;
+  gap: ${spacing.xs};
+  border: 1px solid ${colors.borderPrimary};
+  color: ${colors.textPrimary};
+  min-width: 200px;
+  text-align: center;
+  box-shadow: ${shadows.md};
+`;
+
+const DateText = styled.div`
+  font-size: 18px;
+  color: ${colors.textPrimary};
+  font-weight: ${typography.fontWeights.semiBold};
+`;
+
+const LocationName = styled.div`
+  font-size: 14px;
+  color: ${colors.textPrimary};
+  opacity: 0.9;
+`;
+
+const NoSelectionText = styled.div`
+  font-size: 16px;
+  color: ${colors.textPrimary};
+`;
+
+// Helper function to format date display
+const formatDisplayDate = (date: string) => {
+  // Convert YYYYMMDD to MM-DD-YYYY
+  const year = date.substring(0, 4);
+  const month = date.substring(4, 6);
+  const day = date.substring(6, 8);
+  return `${month}-${day}-${year}`;
+};
+
 export const MapHeader: React.FC<MapHeaderProps> = ({
   selectedLocation,
   isPlaying,
   toggleAnimation,
   currentDate
 }) => {
-  const isTimeSeriesLocation = selectedLocation?.lng === -101.8504 && selectedLocation?.lat === 33.59076;
+  // We don't need this check in the header component as it's handled in the parent component
   
-  const formatDisplayDate = (date: string) => {
-    // Convert YYYYMMDD to MM-DD-YYYY
-    const year = date.substring(0, 4);
-    const month = date.substring(4, 6);
-    const day = date.substring(6, 8);
-    return `${month}-${day}-${year}`;
-  };
+  // Memoize formatted date to prevent unnecessary recalculations
+  const formattedDate = useMemo(() => {
+    return selectedLocation ? formatDisplayDate(selectedLocation.date || currentDate) : '';
+  }, [selectedLocation, currentDate]);
 
   return (
-    <div style={{ 
-      position: 'absolute',
-      top: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      zIndex: 1,
-      fontFamily: 'Sora, sans-serif',
-      color: '#16182d'
-    }}>
-      <div style={{ 
-        padding: '14px', 
-        backgroundColor: '#f8f9fa', 
-        borderRadius: '10px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '6px',
-        border: '1px solid #751d0c',
-        color: '#16182d',
-        minWidth: '200px',
-        textAlign: 'center'
-      }}>
+    <HeaderContainer>
+      <HeaderPanel>
         {selectedLocation ? (
           <>
-            <div style={{ 
-              fontSize: '18px', 
-              color: '#16182d',
-              fontWeight: '600'
-            }}>
-              {formatDisplayDate(selectedLocation.date || currentDate)}
-            </div>
-            <div style={{ 
-              fontSize: '14px', 
-              color: '#16182d',
-              opacity: '0.9'
-            }}>
+            <DateText>
+              {formattedDate}
+            </DateText>
+            <LocationName>
               {selectedLocation.name}
-            </div>
+            </LocationName>
           </>
         ) : (
-          <div style={{ fontSize: '16px', color: '#16182d' }}>
+          <NoSelectionText>
             Select a location to view its footprint
-          </div>
+          </NoSelectionText>
         )}
-      </div>
-    </div>
+      </HeaderPanel>
+    </HeaderContainer>
   );
-}; 
+};

@@ -1,5 +1,7 @@
 import React from 'react';
+import styled from 'styled-components';
 import { LayerType, Location } from '../types';
+import { colors, typography, spacing, borderRadius, shadows, zIndices } from '../../../styles/theme';
 
 interface MapLegendProps {
   selectedLocation: Location | null;
@@ -8,93 +10,75 @@ interface MapLegendProps {
   currentPm25Threshold: number;
 }
 
-// Map legend component
-export const MapLegend: React.FC<MapLegendProps> = ({
-  selectedLocation,
-  layerType,
-  currentFootprintThreshold,
-  currentPm25Threshold
-}) => {
-  if (!selectedLocation) return null;
+// Styled components
+const LegendContainer = styled.div`
+  position: absolute;
+  bottom: ${spacing.xl};
+  right: ${spacing.lg};
+  padding: ${spacing.md};
+  background-color: ${colors.snowbirdWhite};
+  color: ${colors.textPrimary};
+  border-radius: ${borderRadius.lg};
+  box-shadow: ${shadows.lg};
+  z-index: ${zIndices.mapOverlays};
+  max-width: 180px;
+  border: 2px solid ${colors.moabMahogany};
+  font-family: ${typography.fontFamily};
+`;
 
-  const ranges = {
-    footprint: { min: 0.0002, max: 0.04 },
-    pm25: { min: 0, max: 100 }
-  };
+const LegendTitle = styled.h4`
+  margin: 0 0 ${spacing.sm} 0;
+  font-size: ${typography.sizes.body};
+  font-weight: ${typography.fontWeights.semiBold};
+  border-bottom: 1px solid ${colors.moabMahogany};
+  padding-bottom: ${spacing.xs};
+  color: ${colors.textPrimary};
+`;
 
-  return (
-    <div id="map-legend" style={{
-      position: 'absolute',
-      bottom: '30px',
-      right: '20px',
-      padding: '12px',
-      backgroundColor: '#FFFAFA', // Snowbird white
-      color: '#16182d',
-      borderRadius: '8px',
-      boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-      zIndex: 1,
-      maxWidth: '180px',
-      border: '2px solid #8B0000' // Mahogany red border
-    }}>
-      <h4 style={{
-        margin: '0 0 10px 0',
-        fontSize: '14px',
-        fontWeight: '600',
-        borderBottom: '1px solid #8B0000',
-        paddingBottom: '6px',
-        color: '#16182d'
-      }}>
-        {layerType === 'footprint' ? 'Footprint Scale' : 'PM2.5 Scale (μg/m³)'}
-      </h4>
+const LegendGrid = styled.div`
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: ${spacing.xs} ${spacing.sm};
+  align-items: center;
+  margin-bottom: ${spacing.sm};
+`;
 
-      {layerType === 'footprint' ? (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '20px 1fr',
-          gap: '6px 8px',
-          alignItems: 'center',
-          marginBottom: '8px'
-        }}>
-          {generateFootprintLegendItems(ranges.footprint.min, ranges.footprint.max)}
-        </div>
-      ) : (
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '20px 1fr',
-          gap: '6px 8px',
-          alignItems: 'center',
-          marginBottom: '8px'
-        }}>
-          {generatePm25LegendItems(ranges.pm25.min, ranges.pm25.max)}
-        </div>
-      )}
-    </div>
-  );
-};
+const ColorBox = styled.span<{ color: string }>`
+  width: 20px;
+  height: 20px;
+  background-color: ${props => props.color};
+  display: block;
+  border-radius: ${borderRadius.sm};
+`;
 
-// Helper function to generate footprint legend items
+const ValueLabel = styled.span`
+  font-size: 11px;
+  line-height: 1.3;
+`;
+
+const CategoryLabel = styled.span`
+  opacity: 0.8;
+  font-size: 10px;
+  display: block;
+`;
+
+// Generate footprint legend items
 const generateFootprintLegendItems = (min: number, max: number) => {
   const step = (max - min) / 5;
   const values = [min, min + step, min + (2 * step), min + (3 * step), min + (4 * step), max];
-  const colors = ['#ffd4cc', '#ffa699', '#ff7866', '#c73122', '#962615', '#751d0c'];
+  const legendColors = colors.footprintScale;
 
   return values.map((value, i) => (
     <React.Fragment key={i}>
-      <span style={{
-        width: '20px',
-        height: '20px',
-        backgroundColor: colors[i],
-        display: 'block',
-        borderRadius: '4px'
-      }} />
-      <span style={{ fontSize: '11px' }}>
+      <ColorBox color={legendColors[i]} />
+      <ValueLabel>
         {value.toExponential(4)}
-      </span>
+      </ValueLabel>
     </React.Fragment>
   ));
 };
 
-// Helper function to generate PM2.5 legend items
+// Generate PM2.5 legend items
 const generatePm25LegendItems = (min: number, max: number) => {
   const values = [
     min,
@@ -106,22 +90,45 @@ const generatePm25LegendItems = (min: number, max: number) => {
   ];
   
   const labels = ['Very Good', 'Good', 'Moderate', 'Unhealthy for Sensitive', 'Unhealthy', 'Very Unhealthy'];
-  const colors = ['#2c6e31', '#4d9221', '#c67f1d', '#d14009', '#ad1707', '#8b0000'];
+  const legendColors = colors.pm25Scale;
 
   return values.map((value, i) => (
     <React.Fragment key={i}>
-      <span style={{
-        width: '20px',
-        height: '20px',
-        backgroundColor: colors[i],
-        display: 'block',
-        borderRadius: '4px'
-      }} />
-      <span style={{ fontSize: '11px', lineHeight: '1.3' }}>
+      <ColorBox color={legendColors[i]} />
+      <ValueLabel>
         {i === values.length - 1 ? `${value.toFixed(1)}+` : `${value.toFixed(1)} - ${values[i + 1].toFixed(1)}`}
-        <br />
-        <span style={{ opacity: 0.8 }}>{labels[i]}</span>
-      </span>
+        <CategoryLabel>{labels[i]}</CategoryLabel>
+      </ValueLabel>
     </React.Fragment>
   ));
-}; 
+};
+
+export const MapLegend: React.FC<MapLegendProps> = ({
+  selectedLocation,
+  layerType,
+  currentFootprintThreshold,
+  currentPm25Threshold
+}) => {
+  if (!selectedLocation) return null;
+
+  // Define ranges for each layer type
+  const footprintRange = { min: Math.max(0.0001, currentFootprintThreshold), max: 0.04 };
+  const pm25Range = { min: Math.max(0, currentPm25Threshold), max: 100 };
+  
+  // Generate the appropriate legend items based on layer type
+  const legendItems = layerType === 'footprint'
+    ? generateFootprintLegendItems(footprintRange.min, footprintRange.max)
+    : generatePm25LegendItems(pm25Range.min, pm25Range.max);
+
+  return (
+    <LegendContainer>
+      <LegendTitle>
+        {layerType === 'footprint' ? 'Footprint Scale' : 'PM2.5 Scale (μg/m³)'}
+      </LegendTitle>
+
+      <LegendGrid>
+        {legendItems}
+      </LegendGrid>
+    </LegendContainer>
+  );
+};

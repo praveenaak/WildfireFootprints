@@ -25,6 +25,24 @@
   box-sizing: border-box;
 }
 
+/* Fix pointer events for map controls */
+.mapboxgl-control-container {
+  pointer-events: auto !important;
+}
+
+.mapboxgl-canvas {
+  outline: none !important; 
+}
+
+/* Ensure zoom buttons work correctly */
+.mapboxgl-ctrl-zoom-in, 
+.mapboxgl-ctrl-zoom-out,
+button[aria-label="Zoom in"],
+button[aria-label="Zoom out"] {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
 body {
   font-family: var(--font-family);
   font-size: var(--font-size-body);

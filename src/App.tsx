@@ -1,8 +1,4 @@
 import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { routes } from './routes';
-import Header from './components/layout/Header';
-import Footer from './components/layout/Footer';
 import IntroPage from './components/IntroPage';
 import MultiLocationMapbox from './components/maps/MultiLocationMapbox';
 import { MAPBOX_CONFIG } from './config/mapbox';
