@@ -1,3 +1,4 @@
+// src/styles/theme.ts
 export const colors = {
   // Brand Colors from design system
   olympicParkObsidian: '#1a1a1a',
@@ -27,22 +28,22 @@ export const colors = {
   
   // Footprint Scale
   footprintScale: [
-    '#ffd4cc',
-    '#ffa699',
-    '#ff7866',
-    '#c73122',
-    '#962615',
-    '#751d0c'
+    '#e6f7ff',
+    '#91d5ff',
+    '#4dabf7',
+    '#1890ff',
+    '#0050b3',
+    '#003a8c'
   ],
   
   // PM2.5 Scale
   pm25Scale: [
-    '#2c6e31',
-    '#4d9221',
-    '#c67f1d',
-    '#d14009',
-    '#ad1707',
-    '#8b0000'
+    '#e6ffed',
+    '#b7eb8f',
+    '#ffe58f',
+    '#ffbb96',
+    '#ff7875',
+    '#ff4d4f'
   ]
 };
 

@@ -21,7 +21,7 @@ export const parseCoordinates = (): Location[] => {
     const lng = parseFloat(lngStr);
     const lat = parseFloat(latStr);
     
-    // Special case for the time series data location
+    // Special case for the time series data location (Texas)
     if (lng === -101.8504 && lat === 33.59076) {
       return { 
         lat, 
@@ -29,6 +29,17 @@ export const parseCoordinates = (): Location[] => {
         tilesetId: 'pkulandh.8veldf0e', 
         layerName: 'tmp_zu_cizy',
         name: 'Muleshoe, TX'
+      };
+    }
+    
+    // Special case for the second time series data location (Salt Lake City)
+    if (lng === -111.8722 && lat === 40.73639) {
+      return {
+        lat,
+        lng,
+        tilesetId: 'pkulandh._111_8722_40_73639_wf_2016_2017',
+        layerName: 'layer',
+        name: 'Salt Lake City, UT'
       };
     }
     
@@ -43,7 +54,7 @@ export const parseCoordinates = (): Location[] => {
       lng, 
       tilesetId, 
       layerName,
-      name: `${lat.toFixed(4)}°N, ${lng.toFixed(4)}°W`
+      name: `${lat.toFixed(4)}°N, ${Math.abs(lng).toFixed(4)}°W`
     };
   });
 };
@@ -95,4 +106,4 @@ export const formatInitialDate = (timestamp: string): string => {
     console.warn('Error parsing timestamp:', e);
     return DEFAULT_DATE;
   }
-}; 
+};

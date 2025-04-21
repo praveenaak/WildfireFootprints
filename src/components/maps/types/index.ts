@@ -1,3 +1,5 @@
+import mapboxgl from 'mapbox-gl';
+
 export interface Location {
   lat: number;
   lng: number;
@@ -5,6 +7,16 @@ export interface Location {
   layerName: string;
   name: string;
   date?: string;
+}
+
+export interface MapboxViewerProps {
+  accessToken?: string;
+  tilesetId: string;
+  center: [number, number];
+  zoom: number;
+  style?: React.CSSProperties;
+  minFootprintThreshold?: number;
+  minPm25Threshold?: number;
 }
 
 export interface MultiLocationMapboxProps {
@@ -35,4 +47,24 @@ export interface MarkerRef {
   marker: mapboxgl.Marker;
   element: HTMLDivElement;
   location: Location;
-} 
+}
+
+export interface SelectedLocation {
+  footprint: number;
+  pm25: number;
+  longitude: number;
+  latitude: number;
+}
+
+export interface MapControlsProps {
+  selectedLocation: Location | null;
+  layerType: LayerType;
+  setLayerType: (type: LayerType) => void;
+  currentFootprintThreshold: number;
+  currentPm25Threshold: number;
+  adjustThreshold: (type: 'increase' | 'decrease') => void;
+  isPlaying: boolean;
+  toggleAnimation: () => void;
+  currentDate: string;
+  onBackClick: () => void;
+}

@@ -1,37 +1,72 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import styled from 'styled-components';
+import { colors, typography, spacing, shadows } from '../../styles/theme';
+
+const HeaderContainer = styled.header`
+  padding: ${spacing.md} ${spacing.lg};
+  border-bottom: 1px solid ${colors.borderSecondary};
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: ${colors.snowbirdWhite};
+  box-shadow: ${shadows.sm};
+`;
+
+const Logo = styled.div`
+  font-family: ${typography.fontFamily};
+  font-weight: ${typography.fontWeights.bold};
+  font-size: 22px;
+  
+  a {
+    text-decoration: none;
+    color: ${colors.moabMahogany};
+    transition: color 0.2s ease;
+    
+    &:hover {
+      color: ${colors.greatSaltLakeGreen};
+    }
+  }
+`;
+
+const Nav = styled.nav`
+  ul {
+    display: flex;
+    list-style: none;
+    gap: ${spacing.lg};
+    margin: 0;
+    padding: 0;
+  }
+  
+  li a {
+    text-decoration: none;
+    color: ${colors.olympicParkObsidian};
+    font-weight: ${typography.fontWeights.medium};
+    transition: color 0.2s ease;
+    font-family: ${typography.fontFamily};
+    font-size: ${typography.sizes.body};
+    
+    &:hover {
+      color: ${colors.moabMahogany};
+    }
+  }
+`;
 
 const Header: React.FC = () => {
   return (
-    <header style={{ 
-      padding: '16px 24px',
-      borderBottom: '1px solid rgba(0,0,0,0.1)',
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      backgroundColor: 'white',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.05)'
-    }}>
-      <div className="logo" style={{ fontWeight: 700, fontSize: '22px' }}>
-        <Link to="/" style={{ textDecoration: 'none', color: '#2c3e50' }}>
-          Footprint Visualizer
-        </Link>
-      </div>
+    <HeaderContainer>
+      <Logo>
+        <Link to="/">Wildfire Footprint Visualizer</Link>
+      </Logo>
       
-      <nav>
-        <ul style={{ 
-          display: 'flex',
-          listStyle: 'none',
-          gap: '24px',
-          margin: 0,
-          padding: 0
-        }}>
-          <li><Link to="/" style={{ textDecoration: 'none', color: '#2c3e50', fontWeight: 500 }}>Home</Link></li>
-          <li><Link to="/map" style={{ textDecoration: 'none', color: '#2c3e50', fontWeight: 500 }}>Map</Link></li>
-          <li><Link to="/about" style={{ textDecoration: 'none', color: '#2c3e50', fontWeight: 500 }}>About</Link></li>
+      <Nav>
+        <ul>
+          <li><Link to="/">Home</Link></li>
+          <li><Link to="/map">Map</Link></li>
+          <li><Link to="/about">About</Link></li>
         </ul>
-      </nav>
-    </header>
+      </Nav>
+    </HeaderContainer>
   );
 };
 

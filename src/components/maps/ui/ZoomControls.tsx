@@ -17,10 +17,10 @@ const ZoomContainer = styled.div`
   flex-direction: column;
   align-items: center;
   gap: ${spacing.xxs};
-  background-color: ${colors.backgroundTertiary};
+  background-color: ${colors.snowbirdWhite};
   padding: ${spacing.xs};
   border-radius: ${borderRadius.lg};
-  border: 1px solid ${colors.borderPrimary};
+  border: 1px solid ${colors.moabMahogany};
   box-shadow: ${shadows.md};
   pointer-events: auto !important;
 `;
@@ -32,7 +32,7 @@ const ZoomButton = styled.button`
   align-items: center;
   justify-content: center;
   background-color: ${colors.backgroundSecondary};
-  border: 1px solid ${colors.borderPrimary};
+  border: 1px solid ${colors.moabMahogany};
   border-radius: ${borderRadius.sm};
   cursor: pointer !important;
   font-size: 18px;
@@ -72,24 +72,12 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
 }) => {
   const handleZoomIn = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log("Zoom in button clicked");
     onZoomIn();
-    
-    // Use direct window method as a backup
-    if ((window as any).debugMap?.zoomInClicked) {
-      (window as any).debugMap.zoomInClicked();
-    }
   };
   
   const handleZoomOut = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log("Zoom out button clicked");
     onZoomOut();
-    
-    // Use direct window method as a backup
-    if ((window as any).debugMap?.zoomOutClicked) {
-      (window as any).debugMap.zoomOutClicked();
-    }
   };
   
   return (
@@ -114,5 +102,3 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
     </ZoomContainer>
   );
 };
-
-

@@ -1,13 +1,12 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import { Location } from '../types';
-// Import needed components
 import { colors, typography, spacing, borderRadius, shadows, zIndices } from '../../../styles/theme';
+import { Typography } from '../../common/Typography';
 
 interface MapHeaderProps {
   selectedLocation: Location | null;
   isPlaying: boolean;
-  toggleAnimation: () => void;
   currentDate: string;
 }
 
@@ -24,33 +23,35 @@ const HeaderContainer = styled.div`
 
 const HeaderPanel = styled.div`
   padding: ${spacing.md};
-  background-color: ${colors.backgroundTertiary};
+  background-color: ${colors.snowbirdWhite};
   border-radius: ${borderRadius.lg};
   display: flex;
   flex-direction: column;
   gap: ${spacing.xs};
-  border: 1px solid ${colors.borderPrimary};
+  border: 1px solid ${colors.moabMahogany};
   color: ${colors.textPrimary};
   min-width: 200px;
   text-align: center;
   box-shadow: ${shadows.md};
 `;
 
-const DateText = styled.div`
+const DateText = styled(Typography)`
   font-size: 18px;
   color: ${colors.textPrimary};
-  font-weight: ${typography.fontWeights.semiBold};
+  margin-bottom: 4px;
 `;
 
-const LocationName = styled.div`
+const LocationName = styled(Typography)`
   font-size: 14px;
   color: ${colors.textPrimary};
   opacity: 0.9;
+  margin: 0;
 `;
 
-const NoSelectionText = styled.div`
+const NoSelectionText = styled(Typography)`
   font-size: 16px;
   color: ${colors.textPrimary};
+  margin: 0;
 `;
 
 // Helper function to format date display
@@ -65,11 +66,8 @@ const formatDisplayDate = (date: string) => {
 export const MapHeader: React.FC<MapHeaderProps> = ({
   selectedLocation,
   isPlaying,
-  toggleAnimation,
   currentDate
 }) => {
-  // We don't need this check in the header component as it's handled in the parent component
-  
   // Memoize formatted date to prevent unnecessary recalculations
   const formattedDate = useMemo(() => {
     return selectedLocation ? formatDisplayDate(selectedLocation.date || currentDate) : '';
@@ -80,16 +78,16 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
       <HeaderPanel>
         {selectedLocation ? (
           <>
-            <DateText>
+            <DateText variant="h3">
               {formattedDate}
             </DateText>
-            <LocationName>
+            <LocationName variant="body">
               {selectedLocation.name}
             </LocationName>
           </>
         ) : (
-          <NoSelectionText>
-            Select a location to view its footprint
+          <NoSelectionText variant="body">
+            Select a location to view its data
           </NoSelectionText>
         )}
       </HeaderPanel>

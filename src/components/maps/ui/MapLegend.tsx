@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { LayerType, Location } from '../types';
 import { colors, typography, spacing, borderRadius, shadows, zIndices } from '../../../styles/theme';
+import { Typography } from '../../common/Typography';
 
 interface MapLegendProps {
   selectedLocation: Location | null;
@@ -21,7 +22,7 @@ const LegendContainer = styled.div`
   border-radius: ${borderRadius.lg};
   box-shadow: ${shadows.lg};
   z-index: ${zIndices.mapOverlays};
-  max-width: 180px;
+  max-width: 220px;
   border: 2px solid ${colors.moabMahogany};
   font-family: ${typography.fontFamily};
 `;
@@ -66,7 +67,14 @@ const CategoryLabel = styled.span`
 const generateFootprintLegendItems = (min: number, max: number) => {
   const step = (max - min) / 5;
   const values = [min, min + step, min + (2 * step), min + (3 * step), min + (4 * step), max];
-  const legendColors = colors.footprintScale;
+  const legendColors = [
+    colors.footprintScale[0],
+    colors.footprintScale[1],
+    colors.footprintScale[2],
+    colors.footprintScale[3],
+    colors.footprintScale[4],
+    colors.footprintScale[5]
+  ];
 
   return values.map((value, i) => (
     <React.Fragment key={i}>
@@ -90,7 +98,14 @@ const generatePm25LegendItems = (min: number, max: number) => {
   ];
   
   const labels = ['Very Good', 'Good', 'Moderate', 'Unhealthy for Sensitive', 'Unhealthy', 'Very Unhealthy'];
-  const legendColors = colors.pm25Scale;
+  const legendColors = [
+    colors.pm25Scale[0],
+    colors.pm25Scale[1],
+    colors.pm25Scale[2],
+    colors.pm25Scale[3],
+    colors.pm25Scale[4],
+    colors.pm25Scale[5]
+  ];
 
   return values.map((value, i) => (
     <React.Fragment key={i}>
@@ -129,6 +144,10 @@ export const MapLegend: React.FC<MapLegendProps> = ({
       <LegendGrid>
         {legendItems}
       </LegendGrid>
+      
+      <Typography variant="caption">
+        Values below threshold are filtered out
+      </Typography>
     </LegendContainer>
   );
 };

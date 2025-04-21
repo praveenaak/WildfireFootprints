@@ -5,6 +5,7 @@ import { LayerType, Location } from '../types';
 import { formatDate } from '../utils/mapUtils';
 import { Button } from '../../common/Button';
 import { colors, typography, spacing, borderRadius, shadows, zIndices } from '../../../styles/theme';
+import { Typography } from '../../common/Typography';
 
 interface MapControlsProps {
   selectedLocation: Location | null;
@@ -34,11 +35,11 @@ const ControlsContainer = styled.div`
 
 const ControlPanel = styled.div`
   padding: ${spacing.md};
-  background-color: ${colors.backgroundSecondary};
+  background-color: ${colors.snowbirdWhite};
   border-radius: ${borderRadius.lg};
-  border: 1px solid ${colors.borderPrimary};
+  border: 1px solid ${colors.moabMahogany};
   box-shadow: ${shadows.md};
-  color: ${colors.textPrimary};
+  color: ${colors.olympicParkObsidian};
 `;
 
 const ButtonGroup = styled.div`
@@ -52,18 +53,10 @@ const ThresholdContainer = styled.div`
   padding: ${spacing.md};
   background-color: ${colors.backgroundTertiary};
   border-radius: ${borderRadius.md};
-  border: 1px solid ${colors.borderPrimary};
+  border: 1px solid ${colors.borderSecondary};
   display: flex;
   flex-direction: column;
   gap: ${spacing.sm};
-`;
-
-const ThresholdLabel = styled.p`
-  margin: 0;
-  font-size: ${typography.sizes.body};
-  font-weight: ${typography.fontWeights.medium};
-  color: ${colors.textPrimary};
-  font-family: ${typography.fontFamily};
 `;
 
 const SliderContainer = styled.div`
@@ -91,15 +84,11 @@ const DateDisplay = styled.div`
   padding: ${spacing.sm};
   background-color: ${colors.backgroundTertiary};
   border-radius: ${borderRadius.md};
-  border: 1px solid ${colors.borderPrimary};
+  border: 1px solid ${colors.borderSecondary};
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: ${spacing.sm};
-`;
-
-const DateLabel = styled.span`
-  font-weight: ${typography.fontWeights.semiBold};
 `;
 
 const RecordingDot = styled.span`
@@ -144,7 +133,8 @@ export const MapControls: React.FC<MapControlsProps> = ({
   currentDate,
   onBackClick,
 }) => {
-  const isTimeSeriesLocation = selectedLocation?.lng === -101.8504 && selectedLocation?.lat === 33.59076;
+  const isTimeSeriesLocation = selectedLocation?.lng === -101.8504 && selectedLocation?.lat === 33.59076 ||
+                              selectedLocation?.lng === -111.8722 && selectedLocation?.lat === 40.73639;
   
   const handleSliderChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = inverseLogScale(parseFloat(event.target.value));
@@ -191,9 +181,9 @@ export const MapControls: React.FC<MapControlsProps> = ({
         <ThresholdContainer>
           {layerType === 'footprint' ? (
             <>
-              <ThresholdLabel>
+              <Typography variant="body" color={colors.textPrimary}>
                 Footprint Threshold: {currentFootprintThreshold.toExponential(4)}
-              </ThresholdLabel>
+              </Typography>
               <SliderContainer>
                 <StyledSlider
                   type="range"
@@ -210,20 +200,22 @@ export const MapControls: React.FC<MapControlsProps> = ({
               </SliderContainer>
             </>
           ) : (
-            <ThresholdLabel style={{ textAlign: 'center' }}>
+            <Typography variant="body" align="center">
               Showing PM2.5 in μg/m³
-            </ThresholdLabel>
+            </Typography>
           )}
         </ThresholdContainer>
 
         {isTimeSeriesLocation && (
           <>
             <DateDisplay>
-              <DateLabel>Current Date:</DateLabel>
-              <span>
+              <Typography variant="body" color={colors.textPrimary}>
+                Current Date:
+              </Typography>
+              <Typography variant="body">
                 {formatDate(currentDate)}
                 {isPlaying && <RecordingDot />}
-              </span>
+              </Typography>
             </DateDisplay>
             <Button
               onClick={toggleAnimation}

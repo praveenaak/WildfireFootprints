@@ -1,30 +1,17 @@
-import React, { useState } from 'react';
-import IntroPage from './components/IntroPage';
-import MultiLocationMapbox from './components/maps/MultiLocationMapbox';
-import { MAPBOX_CONFIG } from './config/mapbox';
+import React from 'react';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
+import { routes } from './routes';
 import GlobalStyles from './styles/GlobalStyles';
+import ErrorBoundary from './components/ErrorBoundary';
 
-// Main App component that handles routing between intro and map
 const App: React.FC = () => {
-  const [showMap, setShowMap] = useState(false);
-
-  const handleIntroComplete = () => {
-    setShowMap(true);
-  };
-
-  if (!showMap) {
-    return <IntroPage onComplete={handleIntroComplete} />;
-  }
+  const router = createBrowserRouter(routes);
 
   return (
-    <>
+    <ErrorBoundary>
       <GlobalStyles />
-      <MultiLocationMapbox
-        accessToken={MAPBOX_CONFIG.accessToken}
-        center={[-110.0, 39.5]}
-        zoom={4.5}
-      />
-    </>
+      <RouterProvider router={router} />
+    </ErrorBoundary>
   );
 };
 

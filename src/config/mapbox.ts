@@ -16,5 +16,5 @@ export const MAPBOX_CONFIG = {
     parseFloat(getEnvVariable('MAPBOX_CENTER_LAT') || '39')
   ] as [number, number],
   defaultZoom: parseInt(getEnvVariable('MAPBOX_ZOOM') || '4'),
-  styleUrl: getEnvVariable('MAPBOX_STYLE') || 'mapbox://styles/mapbox/dark-v11'
+  styleUrl: getEnvVariable('MAPBOX_STYLE') || 'mapbox://styles/pkulandh/cm9iyi6qq00jo01rce7xjcfay'
 };

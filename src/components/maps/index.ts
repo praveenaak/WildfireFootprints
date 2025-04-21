@@ -1,4 +1,13 @@
-import MapboxViewer from './MapboxViewer';
 import MultiLocationMapbox from './MultiLocationMapbox';
+import { MapControls } from './ui/MapControls';
+import { MapLegend } from './ui/MapLegend';
+import { MapHeader } from './ui/MapHeader';
+import { ZoomControls } from './ui/ZoomControls';
 
-export { MapboxViewer, MultiLocationMapbox };
+export {
+  MultiLocationMapbox,
+  MapControls,
+  MapLegend,
+  MapHeader,
+  ZoomControls
+};

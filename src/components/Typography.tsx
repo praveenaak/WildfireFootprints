@@ -1,86 +1,155 @@
 import React from 'react'
-import styled from 'styled-components'
-import { colors } from '../styles/theme'
+import styled, { css } from 'styled-components'
+import { colors, typography } from '../styles/theme'
 
-type TypographyVariant = 'h1' | 'h2' | 'h3' | 'body'
+type TypographyVariant = 'h1' | 'h2' | 'h3' | 'body' | 'small' | 'caption'
 type TextAlign = 'left' | 'center' | 'right'
+type FontWeight = 'regular' | 'medium' | 'semiBold' | 'bold'
+type Color = 'primary' | 'secondary' | 'tertiary' | 'accent' | 'white'
 
 interface TypographyProps {
   variant?: TypographyVariant
-  color?: string
   align?: TextAlign
-  children: React.ReactNode
+  weight?: FontWeight
+  color?: Color
+  gutterBottom?: boolean
+  truncate?: boolean
+  as?: React.ElementType
   className?: string
+  children: React.ReactNode
 }
 
-const StyledTypography = styled.div<TypographyProps>`
-  color: ${props => props.color || colors.olympicParkObsidian};
-  text-align: ${props => props.align || 'left'};
-  font-family: 'Sora', sans-serif;
+const variantStyles = {
+  h1: css`
+    font-size: ${typography.sizes.h1};
+    line-height: ${typography.lineHeights.h1};
+    font-weight: ${typography.fontWeights.semiBold};
+  `,
+  h2: css`
+    font-size: ${typography.sizes.h2};
+    line-height: ${typography.lineHeights.h2};
+    font-weight: ${typography.fontWeights.semiBold};
+  `,
+  h3: css`
+    font-size: ${typography.sizes.h3};
+    line-height: ${typography.lineHeights.h3};
+    font-weight: ${typography.fontWeights.semiBold};
+  `,
+  body: css`
+    font-size: ${typography.sizes.body};
+    line-height: ${typography.lineHeights.body};
+    font-weight: ${typography.fontWeights.regular};
+  `,
+  small: css`
+    font-size: ${typography.sizes.small};
+    line-height: ${typography.lineHeights.body};
+    font-weight: ${typography.fontWeights.regular};
+  `,
+  caption: css`
+    font-size: ${typography.sizes.small};
+    line-height: ${typography.lineHeights.body};
+    font-weight: ${typography.fontWeights.medium};
+    letter-spacing: 0.02em;
+  `,
+}
 
-  ${props => {
-    switch (props.variant) {
-      case 'h1':
-        return `
-          font-size: 36pt;
-          font-weight: 600;
-          line-height: 1.2;
-        `
-      case 'h2':
-        return `
-          font-size: 20pt;
-          font-weight: 600;
-          line-height: 1.3;
-        `
-      case 'h3':
-        return `
-          font-size: 15pt;
-          font-weight: 600;
-          line-height: 1.4;
-        `
-      default:
-        return `
-          font-size: 9pt;
-          font-weight: 400;
-          line-height: 1.5;
-        `
-    }
-  }}
+const colorStyles = {
+  primary: css`
+    color: ${colors.textPrimary};
+  `,
+  secondary: css`
+    color: ${colors.textSecondary};
+  `,
+  tertiary: css`
+    color: ${colors.textTertiary};
+  `,
+  accent: css`
+    color: ${colors.moabMahogany};
+  `,
+  white: css`
+    color: ${colors.snowbirdWhite};
+  `,
+}
 
-  @media (max-width: 768px) {
-    ${props => {
-      switch (props.variant) {
-        case 'h1':
-          return 'font-size: 28pt;'
-        case 'h2':
-          return 'font-size: 18pt;'
-        case 'h3':
-          return 'font-size: 14pt;'
-        default:
-          return ''
-      }
-    }}
-  }
+const weightStyles = {
+  regular: css`
+    font-weight: ${typography.fontWeights.regular};
+  `,
+  medium: css`
+    font-weight: ${typography.fontWeights.medium};
+  `,
+  semiBold: css`
+    font-weight: ${typography.fontWeights.semiBold};
+  `,
+  bold: css`
+    font-weight: ${typography.fontWeights.bold};
+  `,
+}
+
+const TextElement = styled.span<{
+  $variant: TypographyVariant
+  $align: TextAlign
+  $weight: FontWeight
+  $color: Color
+  $gutterBottom: boolean
+  $truncate: boolean
+}>`
+  font-family: ${typography.fontFamily};
+  margin: 0;
+  ${props => variantStyles[props.$variant]};
+  ${props => colorStyles[props.$color]};
+  ${props => weightStyles[props.$weight]};
+  text-align: ${props => props.$align};
+  margin-bottom: ${props => (props.$gutterBottom ? '0.5em' : '0')};
+  
+  ${props => props.$truncate && css`
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+  `}
 `
+
+const defaultComponentMap: Record<TypographyVariant, React.ElementType> = {
+  h1: 'h1',
+  h2: 'h2',
+  h3: 'h3',
+  body: 'p',
+  small: 'span',
+  caption: 'span',
+}
 
 export const Typography: React.FC<TypographyProps> = ({
   variant = 'body',
-  color,
-  align,
+  align = 'left',
+  weight,
+  color = 'primary',
+  gutterBottom = false,
+  truncate = false,
+  as,
+  className,
   children,
-  className
 }) => {
-  const Component = variant === 'body' ? 'p' : variant
+  const finalWeight = weight || (
+    variant.startsWith('h') ? 'semiBold' : 'regular'
+  )
+  
+  const component = as || defaultComponentMap[variant]
   
   return (
-    <StyledTypography
-      as={Component}
-      variant={variant}
-      color={color}
-      align={align}
+    <TextElement
+      as={component}
+      $variant={variant}
+      $align={align}
+      $weight={finalWeight}
+      $color={color}
+      $gutterBottom={gutterBottom}
+      $truncate={truncate}
       className={className}
     >
       {children}
-    </StyledTypography>
+    </TextElement>
   )
-} 
+}
+
+export default Typography 
