@@ -34,21 +34,40 @@ export const useMapAnimation = ({
    * Function to stop animation
    */
   const stopAnimation = () => {
+    console.log('stopAnimation called');
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
       animationRef.current = null;
     }
+    
+    // Update ref
     isPlayingRef.current = false;
-    setIsPlaying(false);
+    
+    // Get current map state before removing things
+    const savedCenter = map.current ? map.current.getCenter() : null;
+    const savedZoom = map.current ? map.current.getZoom() : null;
+    console.log('Saving map view state on stop - zoom:', savedZoom);
+    
+    // Make sure timestamp indicator is updated
+    addTimestampIndicator();
+    
+    // Restore the map view if needed
+    if (map.current && savedCenter && savedZoom) {
+      console.log('Restoring map view on stop to zoom:', savedZoom);
+      map.current.jumpTo({
+        center: savedCenter,
+        zoom: savedZoom
+      });
+    }
   };
 
   /**
    * Function to start the animation
    */
   const startAnimation = () => {
-    console.log('startAnimation called with:', { isPlaying, selectedLocation });
+    console.log('startAnimation called with:', { isPlaying: isPlayingRef.current, selectedLocation });
     
-    if (!isPlaying || !selectedLocation || !map.current) {
+    if (!selectedLocation || !map.current) {
       console.log('Cannot start animation - missing required state');
       return;
     }
@@ -63,96 +82,158 @@ export const useMapAnimation = ({
       return;
     }
 
-    isPlayingRef.current = true;
-    console.log('Animation starting for date:', currentDate);
-
-    // Define date range - constants to avoid recreating on each animation frame
-    const START_DATE = new Date('2016-08-01');
-    const END_DATE = new Date('2016-10-01');
-    const ANIMATION_DELAY = 500; // ms between frames
-    
-    // Parse the current date once
-    const currentDateParts = [
-      currentDate.substring(0, 4),
-      currentDate.substring(4, 6),
-      currentDate.substring(6, 8)
-    ];
-    
-    let currentDateObj = new Date(`${currentDateParts[0]}-${currentDateParts[1]}-${currentDateParts[2]}`);
-    console.log('Starting animation from date:', currentDateObj.toISOString());
-    
-    // Animation frame function
-    const animate = () => {
-      if (!isPlayingRef.current || !selectedLocation || !map.current) {
-        console.log('Animation condition no longer met, stopping');
-        return;
-      }
-
-      // Increment date by one day
-      currentDateObj.setDate(currentDateObj.getDate() + 1);
-      
-      // Reset to start if we reach the end
-      if (currentDateObj > END_DATE) {
-        currentDateObj = new Date(START_DATE);
-        console.log('Animation reached end date, resetting to start');
-      }
-
-      // Format date for filter - extract to single operation
-      const isoDate = currentDateObj.toISOString().slice(0, 10);
-      const formattedDateForFilter = formatDateForFilter(isoDate);
-      const formattedDate = formattedDateForFilter.replace(/-/g, '');
-      
-      console.log('Animation frame date:', formattedDate, formattedDateForFilter);
-      
-      // Update internal state (YYYYMMDD format)
-      setCurrentDate(formattedDate);
-
-      // Only update filter if the layer exists to avoid errors
-      if (map.current && map.current.getLayer('footprint-layer')) {
-        try {
-          const filter = ['all',
-            ['>', ['get', 'value'], currentFootprintThreshold],
-            ['==', ['get', 'date'], formattedDateForFilter]
-          ];
-          
-          console.log('Setting map filter for date:', formattedDateForFilter);
-          map.current.setFilter('footprint-layer', filter);
-          
-          // If we have pm25 layer, update that as well
-          if (map.current.getLayer('pm25-layer')) {
-            const pm25Filter = ['all',
-              ['>', ['get', 'pm25_value'], 0],
-              ['==', ['get', 'date'], formattedDateForFilter]
-            ];
-            map.current.setFilter('pm25-layer', pm25Filter);
-          }
-          
-          // Update the timestamp indicator after filter is updated
-          addTimestampIndicator();
-        } catch (error) {
-          console.error('Error updating map filter:', error);
+    // Wait for map style to be fully loaded before starting animation
+    if (!map.current.isStyleLoaded()) {
+      console.log('Map style not loaded yet, waiting before starting animation...');
+      // Wait for style to load before starting animation
+      const checkAndStartAnimation = () => {
+        if (map.current && map.current.isStyleLoaded()) {
+          console.log('Map style now loaded, starting animation');
+          actuallyStartAnimation();
+        } else {
+          console.log('Map style still loading, checking again in 100ms');
+          setTimeout(checkAndStartAnimation, 100);
         }
-      } else {
-        console.log('footprint-layer not found, cannot update filter');
-      }
-
-      // Use consistent timing with setTimeout
-      if (isPlayingRef.current) {
-        console.log('Scheduling next animation frame');
-        const timeoutId = setTimeout(() => {
-          if (isPlayingRef.current) {
-            animationRef.current = requestAnimationFrame(animate);
-          }
-        }, ANIMATION_DELAY);
+      };
+      
+      setTimeout(checkAndStartAnimation, 100);
+      return;
+    }
+    
+    // Main animation function when style is loaded
+    actuallyStartAnimation();
+    
+    function actuallyStartAnimation() {
+      // Make sure we set isPlayingRef to true here
+      isPlayingRef.current = true;
+      console.log('Animation starting for date:', currentDate);
+  
+      // Define date range - constants to avoid recreating on each animation frame
+      const START_DATE = new Date('2016-08-01');
+      const END_DATE = new Date('2016-10-01');
+      const ANIMATION_DELAY = 1000; // ms between frames - increased for better visibility
+      
+      // Parse the current date once
+      const currentDateParts = [
+        currentDate.substring(0, 4),
+        currentDate.substring(4, 6),
+        currentDate.substring(6, 8)
+      ];
+      
+      let currentDateObj = new Date(`${currentDateParts[0]}-${currentDateParts[1]}-${currentDateParts[2]}`);
+      console.log('Starting animation from date:', currentDateObj.toISOString());
+    
+    
+      // Animation frame function
+      const animate = () => {
+        if (!isPlayingRef.current || !selectedLocation || !map.current) {
+          console.log('Animation condition no longer met, stopping');
+          return;
+        }
         
-        // Store timeout ID for cleanup
-        return () => clearTimeout(timeoutId);
-      }
-    };
+        // Skip if map style isn't loaded
+        if (!map.current.isStyleLoaded()) {
+          console.log('Map style not loaded in animate, waiting 100ms before trying again');
+          window.setTimeout(() => {
+            if (isPlayingRef.current) {
+              animate();
+            }
+          }, 100);
+          return;
+        }
 
-    // Start the animation
-    console.log('Starting first animation frame');
-    animationRef.current = requestAnimationFrame(animate);
+        // Increment date by one day
+        currentDateObj.setDate(currentDateObj.getDate() + 1);
+        
+        // Reset to start if we reach the end
+        if (currentDateObj > END_DATE) {
+          currentDateObj = new Date(START_DATE);
+          console.log('Animation reached end date, resetting to start');
+        }
+
+        // Format date for filter - extract to single operation
+        const isoDate = currentDateObj.toISOString().slice(0, 10);
+        const formattedDateForFilter = formatDateForFilter(isoDate);
+        const formattedDate = formattedDateForFilter.replace(/-/g, '');
+        
+        console.log('Animation frame date:', formattedDate, formattedDateForFilter);
+        
+        // Update internal state (YYYYMMDD format)
+        setCurrentDate(formattedDate);
+        
+        // Special case for Utah
+        if (selectedLocation.lng === -111.8722 && selectedLocation.lat === 40.73639) {
+          try {
+            if (map.current && map.current.getLayer('footprint-layer')) {
+              const footprintFilter = ['all',
+                ['==', ['get', 'layer_type'], 'f'],
+                ['>', ['get', 'value'], currentFootprintThreshold],
+                ['==', ['get', 'date'], formattedDateForFilter]
+              ];
+              
+              console.log('Setting Utah footprint filter for date:', formattedDateForFilter);
+              map.current.setFilter('footprint-layer', footprintFilter);
+            }
+            
+            if (map.current && map.current.getLayer('pm25-layer')) {
+              const pm25Filter = ['all',
+                ['==', ['get', 'layer_type'], 'f'],
+                ['>', ['get', 'pm25_value'], 0],
+                ['==', ['get', 'date'], formattedDateForFilter]
+              ];
+              console.log('Setting Utah PM2.5 filter for date:', formattedDateForFilter);
+              map.current.setFilter('pm25-layer', pm25Filter);
+            }
+          } catch (error) {
+            console.error('Error updating Utah map filter:', error);
+          }
+        } 
+        // Special case for Texas
+        else if (selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076) {
+          try {
+            if (map.current && map.current.getLayer('footprint-layer')) {
+              const footprintFilter = ['all',
+                ['>', ['get', 'value'], currentFootprintThreshold],
+                ['==', ['get', 'date'], formattedDateForFilter]
+              ];
+              
+              console.log('Setting Texas footprint filter for date:', formattedDateForFilter);
+              map.current.setFilter('footprint-layer', footprintFilter);
+            }
+            
+            if (map.current && map.current.getLayer('pm25-layer')) {
+              const pm25Filter = ['all',
+                ['>', ['get', 'pm25'], 0],
+                ['==', ['get', 'date'], formattedDateForFilter]
+              ];
+              console.log('Setting Texas PM2.5 filter for date:', formattedDateForFilter);
+              map.current.setFilter('pm25-layer', pm25Filter);
+            }
+          } catch (error) {
+            console.error('Error updating Texas map filter:', error);
+          }
+        } else {
+          console.log('Not a time series location, cannot update filter');
+        }
+        
+        // Update the timestamp indicator after filter is updated
+        addTimestampIndicator();
+
+        // Schedule the next frame with global window.setTimeout to ensure it runs
+        if (isPlayingRef.current) {
+          console.log('Scheduling next animation frame');
+          window.setTimeout(() => {
+            if (isPlayingRef.current) {
+              animate();
+            }
+          }, ANIMATION_DELAY);
+        }
+      };
+
+      // Start the animation immediately
+      console.log('Starting first animation frame');
+      animate();
+    }
   };
 
   /**
@@ -163,6 +244,9 @@ export const useMapAnimation = ({
     
     if (isPlaying) {
       console.log('Stopping animation');
+      // Update state immediately
+      setIsPlaying(false);
+      // Then stop animation
       stopAnimation();
     } else {
       console.log('Starting animation');
@@ -182,12 +266,36 @@ export const useMapAnimation = ({
         return;
       }
       
-      // Set playing state which will trigger the useEffect to start animation
-      isPlayingRef.current = true;
+      // Update state immediately first
+      console.log('Setting isPlaying to true');
       setIsPlaying(true);
       
-      // For immediate visual feedback, update timestamp indicator
+      // Set playing ref
+      isPlayingRef.current = true;
+      
+      // Get the current center and zoom from map
+      const savedCenter = map.current ? map.current.getCenter() : null;
+      const savedZoom = map.current ? map.current.getZoom() : 7;
+      console.log('Saving map state - zoom:', savedZoom, 'center:', savedCenter);
+      
+      // Add timestamp indicator for visual feedback before animation starts
       addTimestampIndicator();
+      
+      // Start animation with a small delay to allow state updates to propagate
+      setTimeout(() => {
+        startAnimation();
+          
+        // Wait a bit then restore the map view
+        setTimeout(() => {
+          if (map.current && savedCenter) {
+            console.log('Restoring map view to zoom:', savedZoom);
+            map.current.jumpTo({
+              center: savedCenter,
+              zoom: savedZoom
+            });
+          }
+        }, 50);
+      }, 50);
     }
   };
 
@@ -211,13 +319,18 @@ export const useMapAnimation = ({
         return;
       }
       
-      startAnimation();
+      // Call startAnimation directly
+      setTimeout(() => {
+        console.log('Calling startAnimation from useEffect');
+        startAnimation();
+      }, 10);
     } else if (!isPlaying) {
       stopAnimation();
     }
     
     // Cleanup animation on component unmount or when animation state changes
     return () => {
+      console.log('Cleaning up animation');
       stopAnimation();
     };
     // We intentionally omit startAnimation and stopAnimation as dependencies

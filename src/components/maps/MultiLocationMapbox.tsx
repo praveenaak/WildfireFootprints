@@ -8,15 +8,57 @@ import { MapControls } from './ui/MapControls';
 import { MapLegend } from './ui/MapLegend';
 import { MapHeader } from './ui/MapHeader';
 import { ZoomControls } from './ui/ZoomControls';
+import { DateSelector } from './ui/DateSelector';
 import { Location, LayerType, MarkerRef, MultiLocationMapboxProps } from './types';
 import { colors } from '../../styles/theme';
+import { Play, Pause } from 'lucide-react';
+import styled from 'styled-components';
+
+// Completely redesigned pause/play buttons
+const AnimationButton = styled.div`
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  border: 3px solid white;
+  z-index: 10000;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  
+  &:hover {
+    transform: scale(1.1);
+  }
+`;
+
+const PauseButton = styled(AnimationButton)`
+  background-color: #B32D16;
+  
+  &:hover {
+    background-color: #8B2010;
+  }
+`;
+
+const PlayButton = styled(AnimationButton)`
+  background-color: #2D7638;
+  
+  &:hover {
+    background-color: #1F5828;
+  }
+`;
 
 const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   accessToken = MAPBOX_CONFIG.accessToken,
   center,
   zoom,
   style = { width: '100%', height: '100vh' },
-  minFootprintThreshold = 0.0002,
+  minFootprintThreshold = 1e-7,
   minPm25Threshold = 0.01,
   timestamp = '08-25-2016 00:00'
 }) => {
@@ -24,6 +66,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<MarkerRef[]>([]);
+  const toggleAnimationRef = useRef<() => void>(() => {});
   
   // State
   const [layerType, setLayerType] = useState<LayerType>('footprint');
@@ -37,6 +80,59 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   
   // Parse locations
   const locations = parseCoordinates();
+  
+  // Add timestamp indicator - define this early so it can be referenced by other functions
+  const addTimestampIndicator = useCallback(() => {
+    if (!map.current) return;
+    
+    // Remove existing timestamp if any
+    const existingTimestamp = document.getElementById('map-timestamp');
+    if (existingTimestamp) {
+      existingTimestamp.remove();
+    }
+    
+    // Remove existing pause button regardless of state
+    const existingPauseButton = document.getElementById('pause-animation-button');
+    if (existingPauseButton) {
+      existingPauseButton.remove();
+    }
+    
+    // No longer displaying the timestamp in the bottom left
+    // We'll rely only on the date display in the controls panel
+  }, []);
+  
+  // Set up animation hook
+  const { toggleAnimation } = useMapAnimation({
+    isPlaying,
+    setIsPlaying,
+    currentDate,
+    setCurrentDate,
+    selectedLocation,
+    map,
+    currentFootprintThreshold,
+    addTimestampIndicator
+  });
+
+  // Store toggleAnimation in ref for access from components
+  useEffect(() => {
+    toggleAnimationRef.current = toggleAnimation;
+  }, [toggleAnimation]);
+
+  // Handler for pause/play button click
+  const handlePauseButtonClick = useCallback(() => {
+    console.log('Button clicked, current playing state:', isPlaying);
+    // Toggle the animation state directly
+    toggleAnimation();
+  }, [isPlaying, toggleAnimation]);
+
+  // Debug animation state changes
+  useEffect(() => {
+    console.log("Animation state changed in parent:", isPlaying);
+    // Force re-render when animation state changes
+    if (map.current) {
+      map.current.triggerRepaint();
+    }
+  }, [isPlaying, map]);
   
   // Helper function to handle marker clicks - defined outside of effects
   const handleLocationSelect = useCallback((location: Location) => {
@@ -77,81 +173,6 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   // Dependencies that actually matter for this handler
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPlaying, selectedLocation]);
-  
-  // Add timestamp indicator
-  const addTimestampIndicator = useCallback(() => {
-    if (!map.current) return;
-    
-    // Remove existing timestamp if any
-    const existingTimestamp = document.getElementById('map-timestamp');
-    if (existingTimestamp) {
-      existingTimestamp.remove();
-    }
-    
-    // Only show timestamp for time series locations
-    if (!selectedLocation) return;
-    
-    const isTimeSeriesLocation = 
-      (selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076) || 
-      (selectedLocation.lng === -111.8722 && selectedLocation.lat === 40.73639);
-    
-    if (!isTimeSeriesLocation) return;
-    
-    // Create timestamp container
-    const timestampContainer = document.createElement('div');
-    timestampContainer.id = 'map-timestamp';
-    timestampContainer.style.position = 'absolute';
-    timestampContainer.style.bottom = '30px';
-    timestampContainer.style.left = '20px';
-    timestampContainer.style.padding = '10px 16px';
-    timestampContainer.style.backgroundColor = colors.snowbirdWhite;
-    timestampContainer.style.color = colors.olympicParkObsidian;
-    timestampContainer.style.borderRadius = '10px';
-    timestampContainer.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
-    timestampContainer.style.zIndex = '1';
-    timestampContainer.style.maxWidth = '220px';
-    timestampContainer.style.border = `1px solid ${colors.moabMahogany}`;
-    timestampContainer.style.fontFamily = "'Sora', sans-serif";
-    
-    // Add timestamp text
-    const timestampText = document.createElement('span');
-    timestampText.style.fontSize = '13px';
-    timestampText.style.fontWeight = '600';
-    
-    // Show the current date
-    const formattedDateDisplay = formatDate(currentDate);
-    timestampText.textContent = formattedDateDisplay;
-    
-    // Add animation indicator if playing
-    if (isPlaying) {
-      const animationDot = document.createElement('span');
-      animationDot.style.display = 'inline-block';
-      animationDot.style.marginLeft = '8px';
-      animationDot.style.color = colors.rockyMountainRust;
-      animationDot.style.fontSize = '16px';
-      animationDot.textContent = '●';
-      timestampText.appendChild(animationDot);
-    }
-    
-    timestampContainer.appendChild(timestampText);
-    
-    // Add timestamp to map container
-    if (mapContainer.current) {
-      mapContainer.current.appendChild(timestampContainer);
-    }
-  }, [selectedLocation, isPlaying, currentDate]);
-  
-  // Set up animation hook
-  const { toggleAnimation } = useMapAnimation({
-    isPlaying,
-    setIsPlaying,
-    currentDate,
-    setCurrentDate,
-    selectedLocation,
-    map,
-    currentFootprintThreshold,
-    addTimestampIndicator
-  });
   
   // Function to handle zooming in
   const handleZoomIn = useCallback(() => {
@@ -244,6 +265,70 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     }
   }, [layerType, currentFootprintThreshold, currentPm25Threshold, selectedLocation, currentDate]);
   
+  // Custom wrapper for setCurrentDate to ensure map updates when date changes
+  const handleDateChange = useCallback((newDate: string) => {
+    console.log('Date changed to:', newDate);
+    
+    // Update the current date state
+    setCurrentDate(newDate);
+    
+    // If animation is playing, pause it
+    if (isPlaying) {
+      toggleAnimation();
+    }
+    
+    // Update map filters if there's a selected location
+    if (map.current && selectedLocation) {
+      const formattedDateForFilter = formatDateForFilter(newDate);
+      
+      // Special case for Utah location
+      if (selectedLocation.lng === -111.8722 && selectedLocation.lat === 40.73639) {
+        // Update footprint layer filter
+        if (map.current.getLayer('footprint-layer')) {
+          const footprintFilter = ['all',
+            ['==', ['get', 'layer_type'], 'f'],
+            ['>', ['get', 'value'], currentFootprintThreshold],
+            ['==', ['get', 'date'], formattedDateForFilter]
+          ];
+          map.current.setFilter('footprint-layer', footprintFilter);
+        }
+        
+        // Update PM2.5 layer filter
+        if (map.current.getLayer('pm25-layer')) {
+          const pm25Filter = ['all',
+            ['==', ['get', 'layer_type'], 'f'],
+            ['>', ['get', 'pm25_value'], currentPm25Threshold],
+            ['==', ['get', 'date'], formattedDateForFilter]
+          ];
+          map.current.setFilter('pm25-layer', pm25Filter);
+        }
+      } 
+      // Special case for Texas location
+      else if (selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076) {
+        // Update footprint layer filter
+        if (map.current.getLayer('footprint-layer')) {
+          const footprintFilter = ['all',
+            ['>', ['get', 'value'], currentFootprintThreshold],
+            ['==', ['get', 'date'], formattedDateForFilter]
+          ];
+          map.current.setFilter('footprint-layer', footprintFilter);
+        }
+        
+        // Update PM2.5 layer filter 
+        if (map.current.getLayer('pm25-layer')) {
+          const pm25Filter = ['all',
+            ['>', ['get', 'pm25'], currentPm25Threshold],
+            ['==', ['get', 'date'], formattedDateForFilter]
+          ];
+          map.current.setFilter('pm25-layer', pm25Filter);
+        }
+      }
+      
+      // Update timestamp indicator
+      addTimestampIndicator();
+    }
+  }, [isPlaying, toggleAnimation, selectedLocation, currentFootprintThreshold, currentPm25Threshold, addTimestampIndicator]);
+  
   // Initialize map only once when component mounts
   useEffect(() => {
     // Skip initialization if container is not available
@@ -326,24 +411,6 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         if (location.lng === -101.8504 && location.lat === 33.59076 || 
             location.lng === -111.8722 && location.lat === 40.73639) {
           el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
-          
-          // Add a permanent label below the marker
-          const label = document.createElement('div');
-          label.style.position = 'absolute';
-          label.style.top = '42px';
-          label.style.left = '50%';
-          label.style.transform = 'translateX(-50%)';
-          label.style.backgroundColor = colors.olympicParkObsidian;
-          label.style.color = colors.snowbirdWhite;
-          label.style.padding = '3px 6px';
-          label.style.borderRadius = '4px';
-          label.style.fontSize = '10px';
-          label.style.fontWeight = 'bold';
-          label.style.whiteSpace = 'nowrap';
-          label.style.pointerEvents = 'none';
-          label.textContent = 'Time Series';
-          label.style.border = `1px solid ${colors.moabMahogany}`;
-          el.appendChild(label);
         } else {
           el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.bonnevilleSaltFlatsBlue.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
         }
@@ -463,8 +530,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       });
       
       // Calculate intermediate steps for footprint color scale
-      const footprintMax = 0.04; // Fixed maximum
-      const footprintMin = Math.max(0.0001, currentFootprintThreshold);
+      const footprintMax = 0.8; // Fixed maximum
+      const footprintMin = Math.max(1e-7, currentFootprintThreshold);
       const footprintStep = (footprintMax - footprintMin) / 5;
       
       // Create layer configuration based on the selected location
@@ -481,33 +548,36 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               'interpolate',
               ['exponential', 2],
               ['zoom'],
-              4, 2,
-              5, 5,
-              6, 7,
-              7, 10,
-              8, 20,
+              3, 30,  // Much larger at zoom level 3
+              4, 25,
+              5, 20,
+              6, 18,
+              7, 15,
+              8, 12
             ],
             'circle-color': [
               'interpolate',
               ['linear'],
               ['get', 'value'],
-              footprintMin, colors.footprintScale[0],
-              footprintMin + footprintStep, colors.footprintScale[1],
-              footprintMin + (2 * footprintStep), colors.footprintScale[2],
-              footprintMin + (3 * footprintStep), colors.footprintScale[3],
-              footprintMin + (4 * footprintStep), colors.footprintScale[4],
-              footprintMax, colors.footprintScale[5]
+              1e-7, colors.footprintScale[0], // Lightest for very low values
+              1e-5, colors.footprintScale[0],
+              1e-4, colors.footprintScale[0],
+              1e-3, colors.footprintScale[1], // Start gradient from 0.001
+              1e-2, colors.footprintScale[2],
+              1e-1, colors.footprintScale[3], // Medium
+              5e-1, colors.footprintScale[4], // Darker high
+              8e-1, colors.footprintScale[5] // Darkest for highest values
             ],
-            'circle-opacity': 0.85,
-            'circle-blur': 0.2,
-            'circle-stroke-color': 'rgba(255, 255, 255, 0.3)'
+            'circle-opacity': 0.9,
+            'circle-blur': 1.2,
+            'circle-stroke-width': 0
           },
           layout: {
             visibility: layerType === 'footprint' ? 'visible' : 'none'
           },
           filter: [
             'all',
-            ['==', ['get', 'layer_type'], 'footprint'],
+            ['==', ['get', 'layer_type'], 'f'],
             ['>', ['get', 'value'], currentFootprintThreshold],
             ['==', ['get', 'date'], formatDateForFilter(currentDate)]
           ]
@@ -524,9 +594,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               'interpolate',
               ['linear'],
               ['zoom'],
-              5, 12,
-              8, 20,
-              12, 35
+              3, 10,
+              5, 15,
+              8, 18,
+              12, 15
             ],
             'circle-color': [
               'interpolate',
@@ -541,15 +612,15 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             ],
             'circle-opacity': 0.85,
             'circle-blur': 0.5,
-            'circle-stroke-width': 0.5,
-            'circle-stroke-color': 'rgba(255, 255, 255, 0.3)'
+            'circle-stroke-width': 1.2,
+            'circle-stroke-color': 'rgba(40, 40, 40, 0.7)'
           },
           layout: {
             visibility: layerType === 'pm25' ? 'visible' : 'none'
           },
           filter: [
             'all',
-            ['==', ['get', 'layer_type'], 'convolved'],
+            ['==', ['get', 'layer_type'], 'f'],
             ['>', ['get', 'pm25_value'], currentPm25Threshold],
             ['==', ['get', 'date'], formatDateForFilter(currentDate)]
           ]
@@ -568,26 +639,29 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               'interpolate',
               ['exponential', 2],
               ['zoom'],
-              4, 2,
-              5, 5,
-              6, 7,
-              7, 10,
-              8, 20,
+              3, 30,  // Much larger at zoom level 3
+              4, 25,
+              5, 20,
+              6, 18,
+              7, 15,
+              8, 12
             ],
             'circle-color': [
               'interpolate',
               ['linear'],
               ['get', 'value'],
-              footprintMin, colors.footprintScale[0],
-              footprintMin + footprintStep, colors.footprintScale[1],
-              footprintMin + (2 * footprintStep), colors.footprintScale[2],
-              footprintMin + (3 * footprintStep), colors.footprintScale[3],
-              footprintMin + (4 * footprintStep), colors.footprintScale[4],
-              footprintMax, colors.footprintScale[5]
+              1e-7, colors.footprintScale[0], // Lightest for very low values
+              1e-5, colors.footprintScale[0],
+              1e-4, colors.footprintScale[0],
+              1e-3, colors.footprintScale[1], // Start gradient from 0.001
+              1e-2, colors.footprintScale[2],
+              1e-1, colors.footprintScale[3], // Medium
+              5e-1, colors.footprintScale[4], // Darker high
+              8e-1, colors.footprintScale[5] // Darkest for highest values
             ],
-            'circle-opacity': 0.85,
-            'circle-blur': 0.2,
-            'circle-stroke-color': 'rgba(255, 255, 255, 0.3)'
+            'circle-opacity': 0.9,
+            'circle-blur': 1.2,
+            'circle-stroke-width': 0
           },
           layout: {
             visibility: layerType === 'footprint' ? 'visible' : 'none'
@@ -610,9 +684,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               'interpolate',
               ['linear'],
               ['zoom'],
-              5, 12,
-              8, 20,
-              12, 35
+              3, 10,
+              5, 15,
+              8, 18,
+              12, 15
             ],
             'circle-color': [
               'interpolate',
@@ -627,8 +702,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             ],
             'circle-opacity': 0.85,
             'circle-blur': 0.5,
-            'circle-stroke-width': 0.5,
-            'circle-stroke-color': 'rgba(255, 255, 255, 0.3)'
+            'circle-stroke-width': 1.2,
+            'circle-stroke-color': 'rgba(40, 40, 40, 0.7)'
           },
           layout: {
             visibility: layerType === 'pm25' ? 'visible' : 'none'
@@ -649,27 +724,30 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               'interpolate',
               ['exponential', 2],
               ['zoom'],
-              4, 2,
-              5, 5,
-              6, 7,
-              7, 10,
-              8, 20,
+              3, 20,  // Much larger at zoom level 3
+              4, 20,
+              5, 20,
+              6, 18,
+              7, 15,
+              8, 12
             ],
             'circle-color': [
               'interpolate',
               ['linear'],
               // Check if 'value' property exists, otherwise use 'footprint'
               ['coalesce', ['get', 'value'], ['get', 'footprint']],
-              footprintMin, colors.footprintScale[0],
-              footprintMin + footprintStep, colors.footprintScale[1],
-              footprintMin + (2 * footprintStep), colors.footprintScale[2],
-              footprintMin + (3 * footprintStep), colors.footprintScale[3],
-              footprintMin + (4 * footprintStep), colors.footprintScale[4],
-              footprintMax, colors.footprintScale[5]
+              1e-7, colors.footprintScale[0], // Lightest for very low values
+              1e-5, colors.footprintScale[0],
+              1e-4, colors.footprintScale[0],
+              1e-3, colors.footprintScale[1], // Start gradient from 0.001
+              1e-2, colors.footprintScale[2],
+              1e-1, colors.footprintScale[3], // Medium
+              5e-1, colors.footprintScale[4], // Darker high
+              8e-1, colors.footprintScale[5] // Darkest for highest values
             ],
-            'circle-opacity': 0.85,
-            'circle-blur': 0.2,
-            'circle-stroke-color': 'rgba(255, 255, 255, 0.3)'
+            'circle-opacity': 0.9,
+            'circle-blur': 1.2,
+            'circle-stroke-width': 0
           },
           layout: {
             visibility: layerType === 'footprint' ? 'visible' : 'none'
@@ -688,9 +766,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               'interpolate',
               ['linear'],
               ['zoom'],
-              5, 12,
-              8, 20,
-              12, 35
+              3, 10,
+              5, 15,
+              8, 18,
+              12, 15
             ],
             'circle-color': [
               'interpolate',
@@ -705,8 +784,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             ],
             'circle-opacity': 0.85,
             'circle-blur': 0.5,
-            'circle-stroke-width': 0.5,
-            'circle-stroke-color': 'rgba(255, 255, 255, 0.3)'
+            'circle-stroke-width': 1.2,
+            'circle-stroke-color': 'rgba(40, 40, 40, 0.7)'
           },
           layout: {
             visibility: layerType === 'pm25' ? 'visible' : 'none'
@@ -797,6 +876,28 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         currentFootprintThreshold={currentFootprintThreshold}
         currentPm25Threshold={currentPm25Threshold}
       />
+
+      <DateSelector
+        currentDate={currentDate}
+        setCurrentDate={handleDateChange}
+        isTimeSeriesLocation={!!selectedLocation && (
+          selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076 ||
+          selectedLocation.lng === -111.8722 && selectedLocation.lat === 40.73639
+        )}
+      />
+
+      {/* Animation Control Buttons */}
+      {isPlaying ? (
+        <PauseButton onClick={handlePauseButtonClick}>
+          <Pause size={32} strokeWidth={3} />
+        </PauseButton>
+      ) : (
+        selectedLocation && (
+          <PlayButton onClick={handlePauseButtonClick}>
+            <Play size={32} strokeWidth={3} />
+          </PlayButton>
+        )
+      )}
     </div>
   );
 };
