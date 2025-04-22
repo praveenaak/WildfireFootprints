@@ -28,7 +28,7 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
   zoom,
   style = { width: '100%', height: '100vh' },
   minFootprintThreshold = 1e-7, // Adjust this value based on your data
-  minPm25Threshold = 0.01 // Adjust this value based on your data
+  minPm25Threshold = 0 // Set to 0 to include all PM2.5 values
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -452,7 +452,7 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
           source: 'selected-point',
           paint: {
             'circle-radius': 15,
-            'circle-color': layerType === 'footprint' ? '#1890ff' : '#ff7875',
+            'circle-color': '#cea25d', // Direct hex value for canyonlandsTan
             'circle-opacity': 0.9,
             'circle-stroke-width': 3,
             'circle-stroke-color': 'white'

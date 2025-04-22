@@ -21,7 +21,7 @@ const MapPage: React.FC = () => {
         center={MAPBOX_CONFIG.defaultCenter}
         zoom={MAPBOX_CONFIG.defaultZoom}
         minFootprintThreshold={1e-7} // Initial threshold for footprint data
-        minPm25Threshold={0.01} // Initial threshold for PM2.5 data
+        minPm25Threshold={0} // Initial threshold for PM2.5 data - set to 0 to show all values
         timestamp="08-25-2016 00:00" 
       />
     </MapContainer>

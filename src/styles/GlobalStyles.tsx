@@ -136,6 +136,17 @@ const GlobalStyles = createGlobalStyle`
     filter: brightness(1.1) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
   }
 
+  .location-marker-selected {
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    transition: none;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.6)) !important;
+    z-index: 20 !important;
+  }
+
   /* Marker popup styles */
   .mapboxgl-popup-content {
     padding: 12px;

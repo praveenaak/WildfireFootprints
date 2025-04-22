@@ -58,7 +58,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   zoom,
   style = { width: '100%', height: '100vh' },
   minFootprintThreshold = 1e-7,
-  minPm25Threshold = 0.01,
+  minPm25Threshold = 0,
   timestamp = '08-25-2016 00:00'
 }) => {
   // Refs
@@ -136,6 +136,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   // Helper function to handle marker clicks - defined outside of effects
   const handleLocationSelect = useCallback((location: Location) => {
     console.log('Selecting location:', location.name);
+    console.log('Location coordinates:', location.lat, location.lng);
+    console.log('Current selected location:', selectedLocation?.name);
     
     // Stop any existing animation
     if (isPlaying) {
@@ -152,10 +154,12 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     // Force data reload if clicking the same marker
     if (selectedLocation?.lng === location.lng && 
         selectedLocation?.lat === location.lat) {
+      console.log('Clicking same marker, forcing data reload');
       setDataLoadAttempt(prev => prev + 1);
     }
         
     // Set the location
+    console.log('Setting selected location to:', location.name);
     setSelectedLocation(location);
     
     // Fly to the location
@@ -356,17 +360,17 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       center: center,
       zoom: zoom,
       minZoom: 4,
-      maxZoom: 6,
+      maxZoom: 6.1,
       fadeDuration: 0, // Immediately show tiles without fade-in
       interactive: true, // Make sure the map is interactive
       trackResize: true // Auto-resize when container changes
     });
     
-    // Add navigation controls
-    map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    // Remove zoom controls from top-right
+    // map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
     
-    // Add fullscreen control
-    map.current.addControl(new mapboxgl.FullscreenControl());
+    // Remove fullscreen control
+    // map.current.addControl(new mapboxgl.FullscreenControl());
     
     // Track zoom level changes
     map.current.on('zoom', () => {
@@ -806,38 +810,104 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   // Manage marker visibility when a location is selected
   useEffect(() => {
     if (!markersRef.current.length) return;
+    console.log('Marker visibility effect running, selected location:', selectedLocation?.name);
+    console.log('Tan color hex value:', colors.canyonlandsTan);
     
     if (selectedLocation) {
       // Hide all markers except the selected one
       markersRef.current.forEach(({ marker, element, location }) => {
         if (location.lat === selectedLocation.lat && location.lng === selectedLocation.lng) {
-          // Keep the selected marker visible
-          if (location.lng === -101.8504 && location.lat === 33.59076 ||
-              location.lng === -111.8722 && location.lat === 40.73639) {
-            // Use mahogany color for the time series data marker
-            element.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
-          } else {
-            // Use canyonlands tan color for other selected markers
-            element.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.canyonlandsTan.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
-          }
-        } else {
-          element.style.display = 'none';
+          console.log('Setting selected marker color to tan:', location.name);
+          
+          // Remove old marker from map
+          marker.remove();
+          
+          // Create new marker element with tan color
+          const el = document.createElement('div');
+          el.className = 'location-marker location-marker-selected';
+          el.setAttribute('data-location-name', location.name);
+          el.style.width = '25px';
+          el.style.height = '41px';
+          el.style.backgroundSize = 'cover';
+          el.style.cursor = 'pointer';
+          // Use direct hex color value for the tan color
+          el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23cea25d%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
+          
+          // Create a new marker and add it to the map
+          const newMarker = new mapboxgl.Marker({
+            element: el,
+            anchor: 'bottom',
+            offset: [0, 0],
+            draggable: false
+          })
+            .setLngLat([location.lng, location.lat])
+            .addTo(map.current!);
+            
+          // Update marker reference
+          markersRef.current = markersRef.current.map(item => {
+            if (item.location.lat === location.lat && item.location.lng === location.lng) {
+              return { ...item, marker: newMarker, element: el };
+            }
+            item.marker.remove(); // Hide all other markers
+            return item;
+          });
         }
       });
     } else {
       // Restore all markers to their original styles
       markersRef.current.forEach(({ marker, element, location }) => {
-        element.style.display = 'block';
+        // Remove the existing marker
+        marker.remove();
+        
+        // Create a new marker with original color
+        const el = document.createElement('div');
+        el.className = 'location-marker';
+        el.setAttribute('data-location-name', location.name);
+        el.style.width = '25px';
+        el.style.height = '41px';
+        el.style.backgroundSize = 'cover';
+        el.style.cursor = 'pointer';
         
         if (location.lng === -101.8504 && location.lat === 33.59076 || 
             location.lng === -111.8722 && location.lat === 40.73639) {
-          element.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
+          el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
         } else {
-          element.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.bonnevilleSaltFlatsBlue.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
+          el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.bonnevilleSaltFlatsBlue.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
         }
+        
+        // Create a new marker and add it to the map
+        const newMarker = new mapboxgl.Marker({
+          element: el,
+          anchor: 'bottom',
+          offset: [0, 0],
+          draggable: false
+        })
+          .setLngLat([location.lng, location.lat])
+          .addTo(map.current!);
+          
+        // Add click handler
+        const onMarkerClick = () => {
+          handleLocationSelect(location);
+        };
+        
+        el.addEventListener('click', (e: Event) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onMarkerClick();
+        });
+        
+        newMarker.getElement().addEventListener('click', onMarkerClick);
+        
+        // Update reference
+        markersRef.current = markersRef.current.map(item => {
+          if (item.location.lat === location.lat && item.location.lng === location.lng) {
+            return { ...item, marker: newMarker, element: el };
+          }
+          return item;
+        });
       });
     }
-  }, [selectedLocation, colors.canyonlandsTan, colors.moabMahogany, colors.bonnevilleSaltFlatsBlue]);
+  }, [selectedLocation, colors.canyonlandsTan, colors.moabMahogany, colors.bonnevilleSaltFlatsBlue, handleLocationSelect]);
 
   // Return JSX with styled components
   return (
