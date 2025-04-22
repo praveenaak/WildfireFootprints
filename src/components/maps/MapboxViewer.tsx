@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_CONFIG } from '../../config/mapbox';
+import { colors } from '../../styles/theme';
 
 interface MapboxViewerProps {
   accessToken?: string;
@@ -26,7 +27,7 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
   center,
   zoom,
   style = { width: '100%', height: '100vh' },
-  minFootprintThreshold = 0.0003, // Adjust this value based on your data
+  minFootprintThreshold = 1e-7, // Adjust this value based on your data
   minPm25Threshold = 0.01 // Adjust this value based on your data
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
@@ -67,6 +68,65 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         url: `mapbox://${tilesetId}`
       });
       
+      // Add footprint heatmap layer to create a smooth blended effect
+      map.current.addLayer({
+        id: 'footprint-heatmap',
+        type: 'heatmap',
+        source: 'footprint-data',
+        'source-layer': 'location_-111-9dkxy7',
+        paint: {
+          // Increase the heatmap weight based on footprint value
+          'heatmap-weight': [
+            'interpolate',
+            ['linear'],
+            ['get', 'footprint'],
+            1e-7, 0.1,
+            0.8, 1
+          ],
+          // Increase the heatmap color weight by zoom level
+          'heatmap-intensity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            3, 1,
+            8, 0.5
+          ],
+          // Color ramp for heatmap - lighter to darker mahogany colors
+          'heatmap-color': [
+            'interpolate',
+            ['linear'],
+            ['heatmap-density'],
+            0, 'rgba(255, 219, 213, 0)',
+            0.1, colors.footprintScale[0], // Lightest
+            0.3, colors.footprintScale[1],
+            0.5, colors.footprintScale[2],
+            0.7, colors.footprintScale[3],
+            0.85, colors.footprintScale[4],
+            1, colors.footprintScale[5] // Darkest
+          ],
+          // Adjust the heatmap radius by zoom level
+          'heatmap-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            3, 15,
+            8, 5
+          ],
+          // Transition from heatmap to circle layer by zoom level
+          'heatmap-opacity': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            6, 1,
+            9, 0
+          ]
+        },
+        layout: {
+          visibility: layerType === 'footprint' ? 'visible' : 'none'
+        },
+        filter: ['>', ['get', 'footprint'], minFootprintThreshold]
+      });
+      
       // Add footprint layer as circle points with logarithmic scale for coloring
       map.current.addLayer({
         id: 'footprint-layer',
@@ -78,26 +138,30 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             'interpolate',
             ['linear'],
             ['zoom'],
-            5, 3,
-            8, 8,
-            12, 15
+            3, 25,  // Much larger at zoom level 3
+            4, 20,
+            5, 18,
+            8, 15,
+            12, 10
           ],
           'circle-color': [
-            // Using a logarithmic-like scale for values between minFootprintThreshold and 0.027452
+            // Using a logarithmic-like scale for values between minFootprintThreshold and 0.8
             'interpolate',
             ['linear'],
             // Apply a pseudo-log transformation to the footprint value
-            ['/', ['get', 'footprint'], 0.001], // Divide by small number to scale up for visibility
-            1, '#e6f7ff', // Very low values (0.001)
-            5, '#91d5ff', // Low values (0.005)
-            10, '#4dabf7', // Medium-low values (0.01)
-            15, '#1890ff', // Medium values (0.015)
-            20, '#0050b3', // Medium-high values (0.02)
-            27.452, '#003a8c' // High values (0.027452)
+            ['get', 'footprint'],
+            1e-7, colors.footprintScale[0], // Lightest for very low values
+            1e-5, colors.footprintScale[0],
+            1e-4, colors.footprintScale[0],
+            1e-3, colors.footprintScale[1], // Start gradient from 0.001
+            1e-2, colors.footprintScale[2],
+            1e-1, colors.footprintScale[3],
+            5e-1, colors.footprintScale[4],
+            8e-1, colors.footprintScale[5] // Darkest for highest values
           ],
           'circle-opacity': 0.9,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': 'rgba(255, 255, 255, 0.5)'
+          'circle-stroke-width': 0,
+          'circle-blur': 1.2
         },
         layout: {
           visibility: layerType === 'footprint' ? 'visible' : 'none'
@@ -116,9 +180,10 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             'interpolate',
             ['linear'],
             ['zoom'],
-            5, 3,
-            8, 8,
-            12, 15
+            3, 25,
+            5, 20,
+            8, 15,
+            12, 12
           ],
           'circle-color': [
             'interpolate',
@@ -320,6 +385,12 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
     
     try {
       map.current.setLayoutProperty(
+        'footprint-heatmap',
+        'visibility',
+        layerType === 'footprint' ? 'visible' : 'none'
+      );
+      
+      map.current.setLayoutProperty(
         'footprint-layer',
         'visibility',
         layerType === 'footprint' ? 'visible' : 'none'
@@ -429,6 +500,12 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         
         // Show the appropriate layer based on layer type
         map.current.setLayoutProperty(
+          'footprint-heatmap',
+          'visibility',
+          layerType === 'footprint' ? 'visible' : 'none'
+        );
+        
+        map.current.setLayoutProperty(
           'footprint-layer',
           'visibility',
           layerType === 'footprint' ? 'visible' : 'none'
@@ -479,9 +556,16 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
     legend.appendChild(title);
     
     if (layerType === 'footprint') {
-      // Footprint legend items - starting from the threshold value
-      const values = [minFootprintThreshold, 0.005, 0.01, 0.015, 0.02, 0.027452];
-      const colors = ['#e6f7ff', '#91d5ff', '#4dabf7', '#1890ff', '#0050b3', '#003a8c'];
+      // Footprint legend items - using logarithmic scale
+      const values = [1e-7, 1e-3, 1e-2, 1e-1, 5e-1, 8e-1];
+      const legendColors = [
+        colors.footprintScale[0], // Lightest for very low values
+        colors.footprintScale[1], // Start gradient from 0.001
+        colors.footprintScale[2],
+        colors.footprintScale[3],
+        colors.footprintScale[4],
+        colors.footprintScale[5]  // Darkest for highest values
+      ];
       
       values.forEach((value, i) => {
         const item = document.createElement('div');
@@ -492,7 +576,7 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         const colorBox = document.createElement('span');
         colorBox.style.width = '20px';
         colorBox.style.height = '20px';
-        colorBox.style.backgroundColor = colors[i];
+        colorBox.style.backgroundColor = legendColors[i];
         colorBox.style.display = 'inline-block';
         colorBox.style.marginRight = '5px';
         
@@ -568,6 +652,11 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
       // Update the filter for the footprint layer
       if (map.current && map.current.getLayer('footprint-layer')) {
         map.current.setFilter('footprint-layer', ['>', ['get', 'footprint'], newThreshold]);
+      }
+      
+      // Update the filter for the footprint heatmap layer
+      if (map.current && map.current.getLayer('footprint-heatmap')) {
+        map.current.setFilter('footprint-heatmap', ['>', ['get', 'footprint'], newThreshold]);
       }
     } else {
       const newThreshold = type === 'increase'

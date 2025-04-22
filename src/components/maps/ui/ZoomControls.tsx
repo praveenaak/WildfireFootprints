@@ -20,7 +20,7 @@ const ZoomContainer = styled.div`
   background-color: ${colors.snowbirdWhite};
   padding: ${spacing.xs};
   border-radius: ${borderRadius.lg};
-  border: 1px solid ${colors.moabMahogany};
+  border: 2px solid ${colors.moabMahogany};
   box-shadow: ${shadows.md};
   pointer-events: auto !important;
 `;
@@ -32,7 +32,7 @@ const ZoomButton = styled.button`
   align-items: center;
   justify-content: center;
   background-color: ${colors.backgroundSecondary};
-  border: 1px solid ${colors.moabMahogany};
+  border: 2px solid ${colors.moabMahogany};
   border-radius: ${borderRadius.sm};
   cursor: pointer !important;
   font-size: 18px;

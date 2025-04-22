@@ -37,8 +37,8 @@ export const parseCoordinates = (): Location[] => {
       return {
         lat,
         lng,
-        tilesetId: 'pkulandh._111_8722_40_73639_wf_2016_2017',
-        layerName: 'layer',
+        tilesetId: 'pkulandh._111_8722_40_73639_f_16_p1',
+        layerName: 'tmpk4z4r2mi_footprints_2016_p1',
         name: 'Salt Lake City, UT'
       };
     }

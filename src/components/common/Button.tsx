@@ -1,5 +1,5 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { colors, typography, spacing, borderRadius, transitions } from '../../styles/theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'text';
@@ -69,7 +69,7 @@ const getButtonStyles = (props: StyledButtonProps) => {
       styles += `
         background-color: ${props.isActive ? colors.canyonlandsTan : colors.snowbirdWhite};
         color: ${colors.olympicParkObsidian};
-        border: 1px solid ${colors.moabMahogany};
+        border: 2px solid ${colors.moabMahogany};
         &:hover {
           background-color: ${colors.canyonlandsTan};
         }
@@ -83,7 +83,7 @@ const getButtonStyles = (props: StyledButtonProps) => {
       styles += `
         background-color: transparent;
         color: ${colors.olympicParkObsidian};
-        border: 1px solid ${colors.borderSecondary};
+        border: 2px solid ${colors.borderSecondary};
         &:hover {
           background-color: ${colors.backgroundTertiary};
           border-color: ${colors.textTertiary};
@@ -114,7 +114,7 @@ const getButtonStyles = (props: StyledButtonProps) => {
       styles += `
         background-color: ${props.isActive ? colors.greatSaltLakeGreen : colors.moabMahogany};
         color: ${colors.snowbirdWhite};
-        border: none;
+        border: 2px solid ${colors.moabMahogany};
         &:hover {
           background-color: ${colors.greatSaltLakeGreen};
         }

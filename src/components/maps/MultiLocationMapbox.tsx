@@ -8,7 +8,6 @@ import { MapControls } from './ui/MapControls';
 import { MapLegend } from './ui/MapLegend';
 import { MapHeader } from './ui/MapHeader';
 import { ZoomControls } from './ui/ZoomControls';
-import { DateSelector } from './ui/DateSelector';
 import { Location, LayerType, MarkerRef, MultiLocationMapboxProps } from './types';
 import { colors } from '../../styles/theme';
 import { Play, Pause } from 'lucide-react';
@@ -356,6 +355,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       style: MAPBOX_CONFIG.styleUrl,
       center: center,
       zoom: zoom,
+      minZoom: 4,
+      maxZoom: 6,
       fadeDuration: 0, // Immediately show tiles without fade-in
       interactive: true, // Make sure the map is interactive
       trackResize: true // Auto-resize when container changes
@@ -849,6 +850,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         selectedLocation={selectedLocation} 
         isPlaying={isPlaying} 
         currentDate={currentDate} 
+        setCurrentDate={handleDateChange}
       />
       
       <MapControls 
@@ -875,15 +877,6 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         layerType={layerType}
         currentFootprintThreshold={currentFootprintThreshold}
         currentPm25Threshold={currentPm25Threshold}
-      />
-
-      <DateSelector
-        currentDate={currentDate}
-        setCurrentDate={handleDateChange}
-        isTimeSeriesLocation={!!selectedLocation && (
-          selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076 ||
-          selectedLocation.lng === -111.8722 && selectedLocation.lat === 40.73639
-        )}
       />
 
       {/* Animation Control Buttons */}

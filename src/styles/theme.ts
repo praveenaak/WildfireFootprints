@@ -28,12 +28,12 @@ export const colors = {
   
   // Footprint Scale
   footprintScale: [
-    '#e6f7ff',
-    '#91d5ff',
-    '#4dabf7',
-    '#1890ff',
-    '#0050b3',
-    '#003a8c'
+    '#FFE6E0', // Lightest pink
+    '#FFCDC4', 
+    '#F7A597',
+    '#EE7D6A',
+    '#D6553E',
+    '#B32D16', // Darker mahogany
   ],
   
   // PM2.5 Scale

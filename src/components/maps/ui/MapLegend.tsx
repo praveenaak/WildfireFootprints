@@ -31,7 +31,7 @@ const LegendTitle = styled.h4`
   margin: 0 0 ${spacing.sm} 0;
   font-size: ${typography.sizes.body};
   font-weight: ${typography.fontWeights.semiBold};
-  border-bottom: 1px solid ${colors.moabMahogany};
+  border-bottom: 2px solid ${colors.moabMahogany};
   padding-bottom: ${spacing.xs};
   color: ${colors.textPrimary};
 `;
@@ -65,22 +65,27 @@ const CategoryLabel = styled.span`
 
 // Generate footprint legend items
 const generateFootprintLegendItems = (min: number, max: number) => {
-  const step = (max - min) / 5;
-  const values = [min, min + step, min + (2 * step), min + (3 * step), min + (4 * step), max];
+  // Using logarithmic scale points instead of linear steps
+  const values = [1e-7, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 5e-1, 8e-1];
   const legendColors = [
+    colors.footprintScale[0], // Lightest for very low values
     colors.footprintScale[0],
-    colors.footprintScale[1],
+    colors.footprintScale[0],
+    colors.footprintScale[1], // Start gradient from 0.001
     colors.footprintScale[2],
     colors.footprintScale[3],
     colors.footprintScale[4],
-    colors.footprintScale[5]
+    colors.footprintScale[5]  // Darkest for highest values
   ];
 
-  return values.map((value, i) => (
+  // Only show a subset of the points to keep legend compact
+  const displayIndices = [0, 3, 4, 5, 6, 7]; // Show 1e-7, 1e-3, 1e-2, 1e-1, 5e-1, 8e-1
+  
+  return displayIndices.map(i => (
     <React.Fragment key={i}>
       <ColorBox color={legendColors[i]} />
       <ValueLabel>
-        {value.toExponential(4)}
+        {values[i].toExponential(1)}
       </ValueLabel>
     </React.Fragment>
   ));
@@ -127,7 +132,7 @@ export const MapLegend: React.FC<MapLegendProps> = ({
   if (!selectedLocation) return null;
 
   // Define ranges for each layer type
-  const footprintRange = { min: Math.max(0.0001, currentFootprintThreshold), max: 0.04 };
+  const footprintRange = { min: Math.max(1e-7, currentFootprintThreshold), max: 0.8 };
   const pm25Range = { min: Math.max(0, currentPm25Threshold), max: 100 };
   
   // Generate the appropriate legend items based on layer type

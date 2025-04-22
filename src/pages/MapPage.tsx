@@ -20,7 +20,7 @@ const MapPage: React.FC = () => {
       <MultiLocationMapbox 
         center={MAPBOX_CONFIG.defaultCenter}
         zoom={MAPBOX_CONFIG.defaultZoom}
-        minFootprintThreshold={0.0002} // Initial threshold for footprint data
+        minFootprintThreshold={1e-7} // Initial threshold for footprint data
         minPm25Threshold={0.01} // Initial threshold for PM2.5 data
         timestamp="08-25-2016 00:00" 
       />

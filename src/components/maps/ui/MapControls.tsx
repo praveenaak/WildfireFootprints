@@ -37,7 +37,7 @@ const ControlPanel = styled.div`
   padding: ${spacing.md};
   background-color: ${colors.snowbirdWhite};
   border-radius: ${borderRadius.lg};
-  border: 1px solid ${colors.moabMahogany};
+  border: 2px solid ${colors.moabMahogany};
   box-shadow: ${shadows.md};
   color: ${colors.olympicParkObsidian};
 `;
@@ -53,7 +53,7 @@ const ThresholdContainer = styled.div`
   padding: ${spacing.md};
   background-color: ${colors.backgroundTertiary};
   border-radius: ${borderRadius.md};
-  border: 1px solid ${colors.borderSecondary};
+  border: 2px solid ${colors.borderSecondary};
   display: flex;
   flex-direction: column;
   gap: ${spacing.sm};
@@ -84,7 +84,7 @@ const DateDisplay = styled.div`
   padding: ${spacing.sm};
   background-color: ${colors.backgroundTertiary};
   border-radius: ${borderRadius.md};
-  border: 1px solid ${colors.borderSecondary};
+  border: 2px solid ${colors.borderSecondary};
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -118,8 +118,8 @@ const logScale = (value: number) => Math.log10(value);
 const inverseLogScale = (value: number) => Math.pow(10, value);
 
 // Min and max values for the footprint threshold
-const MIN_THRESHOLD = 0.0001;
-const MAX_THRESHOLD = 0.04;
+const MIN_THRESHOLD = 1e-7;
+const MAX_THRESHOLD = 0.8;
 
 export const MapControls: React.FC<MapControlsProps> = ({
   selectedLocation,
@@ -218,7 +218,11 @@ export const MapControls: React.FC<MapControlsProps> = ({
               </Typography>
             </DateDisplay>
             <Button
-              onClick={toggleAnimation}
+              onClick={() => {
+                console.log('Play/Pause button clicked, current state:', isPlaying);
+                // This is the button in the UI
+                toggleAnimation();
+              }}
               variant="secondary"
               fullWidth
               icon={isPlaying ? <Pause size={16} /> : <Play size={16} />}
