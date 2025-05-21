@@ -173,6 +173,19 @@ export const useMapAnimation = ({
           console.log('Animation reached end date, resetting to start');
         }
 
+        // Check if we're in October of any year except 2020 (the final year)
+        // If so, jump to August 1 of the next year
+        const isOctober = currentDateObj.getMonth() === 9; // October is month 9 (zero-indexed)
+        const isBeforeFinalYear = currentDateObj.getFullYear() < 2020;
+        
+        if (isOctober && isBeforeFinalYear) {
+          // Move to August 1 of next year
+          currentDateObj.setFullYear(currentDateObj.getFullYear() + 1);
+          currentDateObj.setMonth(7); // August is month 7 (zero-indexed)
+          currentDateObj.setDate(1);
+          console.log('Reached October, jumping to August 1 of next year:', currentDateObj.toISOString());
+        }
+
         // Get new date components
         const newYear = currentDateObj.getFullYear();
         const newMonth = currentDateObj.getMonth() + 1;
