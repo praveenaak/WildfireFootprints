@@ -27,6 +27,23 @@ const LegendContainer = styled.div`
   font-family: ${typography.fontFamily};
 `;
 
+const CombinedLegendContainer = styled.div`
+  position: absolute;
+  bottom: ${spacing.xl};
+  right: ${spacing.lg};
+  padding: ${spacing.md};
+  background-color: ${colors.snowbirdWhite};
+  color: ${colors.textPrimary};
+  border-radius: ${borderRadius.lg};
+  box-shadow: ${shadows.lg};
+  z-index: ${zIndices.mapOverlays};
+  max-width: 460px;
+  border: 2px solid ${colors.moabMahogany};
+  font-family: ${typography.fontFamily};
+  display: flex;
+  gap: ${spacing.md};
+`;
+
 const LegendTitle = styled.h4`
   margin: 0 0 ${spacing.sm} 0;
   font-size: ${typography.sizes.body};
@@ -134,6 +151,30 @@ export const MapLegend: React.FC<MapLegendProps> = ({
   // Define ranges for each layer type
   const footprintRange = { min: Math.max(1e-7, currentFootprintThreshold), max: 0.8 };
   const pm25Range = { min: Math.max(0, currentPm25Threshold), max: 100 };
+  
+  // For combined view, render two legends side by side
+  if (layerType === 'combined') {
+    return (
+      <CombinedLegendContainer>
+        <div>
+          <LegendTitle>
+            Footprint Scale
+          </LegendTitle>
+          <LegendGrid>
+            {generateFootprintLegendItems(footprintRange.min, footprintRange.max)}
+          </LegendGrid>
+        </div>
+        <div>
+          <LegendTitle>
+            PM2.5 Scale (μg/m³)
+          </LegendTitle>
+          <LegendGrid>
+            {generatePm25LegendItems(pm25Range.min, pm25Range.max)}
+          </LegendGrid>
+        </div>
+      </CombinedLegendContainer>
+    );
+  }
   
   // Generate the appropriate legend items based on layer type
   const legendItems = layerType === 'footprint'

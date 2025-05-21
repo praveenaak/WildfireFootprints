@@ -12,22 +12,24 @@ interface MapHeaderProps {
   setCurrentDate?: (date: string) => void;
 }
 
-// Styled components with enhanced design
+// Styled components with design
 const HeaderContainer = styled.div`
   position: absolute;
-  top: ${spacing.lg};
-  left: 50%;
-  transform: translateX(-50%);
+  top: ${spacing.lg}; 
+  left: ${spacing.lg};
+  transform: none;
   z-index: ${zIndices.mapOverlays};
   font-family: ${typography.fontFamily};
   color: ${colors.textPrimary};
-  max-width: 450px;
-  width: 90%;
+  max-width: 320px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
 `;
 
 const HeaderPanel = styled.div`
-  padding: ${spacing.md} ${spacing.lg};
-  background-color: rgba(255, 255, 255, 0.95);
+  padding: ${spacing.md};
+  background-color: ${colors.snowbirdWhite};
   border-radius: ${borderRadius.lg};
   display: flex;
   flex-direction: column;
@@ -38,6 +40,7 @@ const HeaderPanel = styled.div`
   box-shadow: ${shadows.md};
   backdrop-filter: blur(4px);
   transition: ${transitions.medium};
+  width: 100%;
   
   &:hover {
     box-shadow: ${shadows.lg};
@@ -232,16 +235,15 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
   currentDate,
   setCurrentDate
 }) => {
-  // Check if this is a time series location
-  const isTimeSeriesLocation = selectedLocation && (
-    (selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076) || 
-    (selectedLocation.lng === -111.8722 && selectedLocation.lat === 40.73639)
-  );
+  // All locations now support time series data
+  const isTimeSeriesLocation = true;
 
-  // Parse the current date for selectors
-  const year = currentDate?.substring(0, 4);
-  const month = currentDate?.substring(4, 6);
-  const day = currentDate?.substring(6, 8);
+  // Parse the current date for selectors, defaulting to August 1, 2016 if undefined
+  const defaultDate = '20160801';
+  const safeCurrentDate = currentDate || defaultDate;
+  const year = safeCurrentDate.substring(0, 4);
+  const month = safeCurrentDate.substring(4, 6);
+  const day = safeCurrentDate.substring(6, 8);
   
   // Generate year options (2016-2020)
   const years = ['2016', '2017', '2018', '2019', '2020'];
@@ -254,7 +256,10 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
   ];
   
   // Generate day options based on selected month
-  const getDaysForMonth = (month: string) => {
+  const getDaysForMonth = (monthValue: string | undefined) => {
+    // Handle null/undefined month, defaulting to August (08)
+    const month = monthValue || '08';
+    
     if (month === '10') {
       // Only show October 1st
       return [{ value: '01', label: '1' }];
@@ -279,29 +284,38 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!setCurrentDate) return;
     const newYear = e.target.value;
-    setCurrentDate(`${newYear}${month}${day}`);
+    // Guard against null/undefined values
+    const currentMonth = month || '08';
+    const currentDay = day || '01';
+    setCurrentDate(`${newYear}${currentMonth}${currentDay}`);
   };
   
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!setCurrentDate) return;
     const newMonth = e.target.value;
     
+    // Guard against null/undefined values
+    const currentYear = year || '2016';
+    let newDay = day || '01';
+    
     // If changing to October, force day to 01
-    let newDay = day;
     if (newMonth === '10') {
       newDay = '01';
-    } else if (newMonth === '09' && parseInt(day) > 30) {
+    } else if (newMonth === '09' && parseInt(newDay) > 30) {
       // Adjust day if changing to September and day is 31
       newDay = '30';
     }
     
-    setCurrentDate(`${year}${newMonth}${newDay}`);
+    setCurrentDate(`${currentYear}${newMonth}${newDay}`);
   };
   
   const handleDayChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!setCurrentDate) return;
     const newDay = e.target.value;
-    setCurrentDate(`${year}${month}${newDay}`);
+    // Guard against null/undefined values
+    const currentYear = year || '2016';
+    const currentMonth = month || '08';
+    setCurrentDate(`${currentYear}${currentMonth}${newDay}`);
   };
 
   // Determine if the location is editable (time series and can be edited)

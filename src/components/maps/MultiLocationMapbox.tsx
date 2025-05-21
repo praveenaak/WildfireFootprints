@@ -1,8 +1,21 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { MAPBOX_CONFIG } from '../../config/mapbox';
-import { parseCoordinates, formatInitialDate, formatDate, formatDateForFilter } from './utils/mapUtils';
+import { 
+  parseCoordinates, 
+  formatInitialDate, 
+  formatDate, 
+  formatDateForFilter, 
+  determineFootprintCoordinate, 
+  determineConvolvedPart, 
+  isSpecialCoordinate, 
+  getSpecialCoordinatePartFunction, 
+  getSpecialCoordinateConvolvedPartFunction, 
+  formatSpecialCoordinateTilesetId, 
+  formatSpecialCoordinateConvolvedTilesetId, 
+  getConvolvedLayerName
+} from './utils/mapUtils';
 import { useMapAnimation } from './hooks/useMapAnimation';
 import { MapControls } from './ui/MapControls';
 import { MapLegend } from './ui/MapLegend';
@@ -12,6 +25,32 @@ import { Location, LayerType, MarkerRef, MultiLocationMapboxProps } from './type
 import { colors } from '../../styles/theme';
 import { Play, Pause } from 'lucide-react';
 import styled from 'styled-components';
+import styles from './MapboxViewer.module.css';
+
+// Helper function to generate the appropriate filter for footprint data
+const getFootprintFilter = (dateString: string, threshold: number): any[] => {
+  const formattedDate = formatDateForFilter(dateString);
+  const year = parseInt(dateString.substring(0, 4));
+  const month = parseInt(dateString.substring(4, 6));
+  const day = parseInt(dateString.substring(6, 8));
+  
+  // Always use exact date matching for the filter
+  // This ensures we only show data for the specific date selected
+  const filter = [
+    'all',
+    ['>', ['get', 'value'], threshold],
+    ['==', ['get', 'date'], formattedDate]
+  ];
+  
+  // Log the filter for debugging
+  console.log('Creating footprint filter for date:', {
+    rawDate: dateString,
+    formattedDate,
+    filter
+  });
+  
+  return filter;
+};
 
 // Completely redesigned pause/play buttons
 const AnimationButton = styled.div`
@@ -122,7 +161,12 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     console.log('Button clicked, current playing state:', isPlaying);
     // Toggle the animation state directly
     toggleAnimation();
-  }, [isPlaying, toggleAnimation]);
+    
+    // Force a repaint to ensure the map updates visually
+    if (map.current) {
+      map.current.triggerRepaint();
+    }
+  }, [isPlaying, toggleAnimation, map]);
 
   // Debug animation state changes
   useEffect(() => {
@@ -144,12 +188,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       setIsPlaying(false);
     }
     
-    // Reset current date for time series locations
-    if (location.lng === -101.8504 && location.lat === 33.59076 ||
-        location.lng === -111.8722 && location.lat === 40.73639) {
-      // Set to 2016-08-01 for the special locations
-      setCurrentDate('20160801');
-    }
+    // Reset current date for all locations (all now support time series)
+    setCurrentDate('20160801');
     
     // Force data reload if clicking the same marker
     if (selectedLocation?.lng === location.lng && 
@@ -237,21 +277,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       
       // Update filter if layer exists
       if (map.current && map.current.getLayer('footprint-layer')) {
-        if (selectedLocation && 
-            (selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076 || 
-             selectedLocation.lng === -111.8722 && selectedLocation.lat === 40.73639)) {
-          // Format date as YYYY-MM-DD for the filter
-          const formattedDateForFilter = formatDateForFilter(currentDate);
-          
-          // For time series data
-          map.current.setFilter('footprint-layer', ['all',
-            ['>', ['get', 'value'], newThreshold],
-            ['==', ['get', 'date'], formattedDateForFilter]
-          ]);
-        } else {
-          // For regular footprint data
-          map.current.setFilter('footprint-layer', ['>', ['coalesce', ['get', 'footprint'], 0], newThreshold]);
-        }
+        // Apply the filter using our shared helper function
+        const footprintFilter = getFootprintFilter(currentDate, newThreshold);
+        map.current.setFilter('footprint-layer', footprintFilter);
       }
     } else {
       // Adjust PM2.5 threshold
@@ -263,68 +291,161 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       
       // Update filter if layer exists
       if (map.current && map.current.getLayer('pm25-layer')) {
-        map.current.setFilter('pm25-layer', ['>', ['get', 'pm25'], newThreshold]);
+        const formattedDateForFilter = formatDateForFilter(currentDate);
+        const pm25Filter = ['all',
+          ['>', ['get', 'pm25_value'], newThreshold],
+          ['==', ['get', 'date'], formattedDateForFilter]
+        ];
+        map.current.setFilter('pm25-layer', pm25Filter);
       }
     }
-  }, [layerType, currentFootprintThreshold, currentPm25Threshold, selectedLocation, currentDate]);
+  }, [layerType, currentFootprintThreshold, currentPm25Threshold, currentDate]);
   
   // Custom wrapper for setCurrentDate to ensure map updates when date changes
   const handleDateChange = useCallback((newDate: string) => {
     console.log('Date changed to:', newDate);
+
+    // Convert to YYYY-MM-DD format for detailed logging
+    const formattedDateForLog = formatDateForFilter(newDate);
+    console.log('Formatted date for filter:', formattedDateForLog);
     
-    // Update the current date state
-    setCurrentDate(newDate);
+    // Log data part determination
+    // All coordinates are now special coordinates
+    const specialPartFunction = getSpecialCoordinatePartFunction(selectedLocation?.lng || 0, selectedLocation?.lat || 0);
+    const specialPart = specialPartFunction(newDate);
+    console.log('Special coordinate part determination:', {
+      coordinate: `${selectedLocation?.lng}, ${selectedLocation?.lat}`,
+      date: newDate,
+      formattedDate: formattedDateForLog,
+      part: specialPart
+    });
     
-    // If animation is playing, pause it
+    // Stop any running animation
     if (isPlaying) {
       toggleAnimation();
     }
+    
+    // Set new date
+    setCurrentDate(newDate);
     
     // Update map filters if there's a selected location
     if (map.current && selectedLocation) {
       const formattedDateForFilter = formatDateForFilter(newDate);
       
-      // Special case for Utah location
-      if (selectedLocation.lng === -111.8722 && selectedLocation.lat === 40.73639) {
-        // Update footprint layer filter
-        if (map.current.getLayer('footprint-layer')) {
-          const footprintFilter = ['all',
-            ['==', ['get', 'layer_type'], 'f'],
-            ['>', ['get', 'value'], currentFootprintThreshold],
-            ['==', ['get', 'date'], formattedDateForFilter]
-          ];
-          map.current.setFilter('footprint-layer', footprintFilter);
+      // Check if we need to reload data because of a part switch
+      let needsReload = false;
+      
+      // All coordinates now use the special coordinate system
+      // Get the current source layer from map
+      let currentPart = "";
+      if (map.current.getLayer('footprint-layer')) {
+        const sourceLayer = (map.current.getLayer('footprint-layer') as any)['source-layer'];
+        // Extract part (p1-p8)
+        if (sourceLayer && sourceLayer.includes('_p')) {
+          currentPart = sourceLayer.substring(sourceLayer.lastIndexOf('_p') + 1);
         }
         
-        // Update PM2.5 layer filter
-        if (map.current.getLayer('pm25-layer')) {
-          const pm25Filter = ['all',
-            ['==', ['get', 'layer_type'], 'f'],
-            ['>', ['get', 'pm25_value'], currentPm25Threshold],
-            ['==', ['get', 'date'], formattedDateForFilter]
-          ];
-          map.current.setFilter('pm25-layer', pm25Filter);
+        // Determine new part for footprint data
+        const partFunction = getSpecialCoordinatePartFunction(selectedLocation.lng, selectedLocation.lat);
+        const newPart = partFunction(newDate);
+        
+        if (currentPart !== newPart.substring(1)) {
+          needsReload = true;
         }
-      } 
-      // Special case for Texas location
-      else if (selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076) {
-        // Update footprint layer filter
-        if (map.current.getLayer('footprint-layer')) {
-          const footprintFilter = ['all',
-            ['>', ['get', 'value'], currentFootprintThreshold],
-            ['==', ['get', 'date'], formattedDateForFilter]
-          ];
-          map.current.setFilter('footprint-layer', footprintFilter);
+      } else if (map.current.getLayer('pm25-layer')) {
+        const sourceLayer = (map.current.getLayer('pm25-layer') as any)['source-layer'];
+        // Extract part (p1-p3)
+        if (sourceLayer && sourceLayer.includes('_p')) {
+          currentPart = sourceLayer.substring(sourceLayer.lastIndexOf('_p') + 1);
         }
         
-        // Update PM2.5 layer filter 
-        if (map.current.getLayer('pm25-layer')) {
-          const pm25Filter = ['all',
-            ['>', ['get', 'pm25'], currentPm25Threshold],
-            ['==', ['get', 'date'], formattedDateForFilter]
-          ];
-          map.current.setFilter('pm25-layer', pm25Filter);
+        // Determine new part for convolved PM2.5 data
+        const convolvedPartFunction = getSpecialCoordinateConvolvedPartFunction(selectedLocation.lng, selectedLocation.lat);
+        const newPart = convolvedPartFunction(newDate);
+        
+        if (currentPart !== newPart.substring(1)) {
+          needsReload = true;
         }
+      }
+      
+      if (needsReload) {
+        // If we need a different part, trigger a full data reload
+        console.log('Date change requires part change, reloading data');
+        setDataLoadAttempt(prev => prev + 1);
+        return;
+      }
+      
+      // Otherwise, just update the filter
+      if (map.current.getLayer('footprint-layer')) {
+        const footprintFilter = getFootprintFilter(newDate, currentFootprintThreshold);
+        
+        // Debug log for filter
+        console.log('Applying footprint filter:', {
+          date: newDate,
+          formattedDate: formattedDateForFilter,
+          threshold: currentFootprintThreshold,
+          filter: footprintFilter
+        });
+        
+        map.current.setFilter('footprint-layer', footprintFilter);
+        
+        // Add debug validation of filter after applying
+        setTimeout(() => {
+          if (map.current) {
+            try {
+              const appliedFilter = map.current.getFilter('footprint-layer');
+              console.log('Verified applied filter:', appliedFilter);
+              
+              // Check if there's any data for this specific date in the dataset
+              const sourceData = map.current.getSource('footprint-data');
+              if (sourceData) {
+                const sourceId = (sourceData as any)._options?.url;
+                console.log('Source data URL:', sourceId);
+              }
+              
+              // Check rendered features
+              const bounds = map.current.getBounds();
+              const features = map.current.queryRenderedFeatures(undefined, {
+                layers: ['footprint-layer']
+              });
+              
+              
+              // If no features are visible, try querying with a more permissive filter
+              if (features.length === 0) {
+                const permissiveFeatures = map.current.querySourceFeatures('footprint-data', {
+                  sourceLayer: (map.current.getLayer('footprint-layer') as any)['source-layer'],
+                  filter: ['>', ['get', 'value'], 0]
+                });
+                
+                // Get a sample of dates available
+                const availableDates = new Set<string>();
+                permissiveFeatures.slice(0, 100).forEach(f => {
+                  if (f.properties && f.properties.date) {
+                    availableDates.add(f.properties.date);
+                  }
+                });
+                
+                console.log('Sample of available dates in current tileset:', {
+                  totalFeatures: permissiveFeatures.length,
+                  availableDates: Array.from(availableDates).sort(),
+                  targetDate: formattedDateForFilter,
+                  sourceLayerName: (map.current.getLayer('footprint-layer') as any)['source-layer']
+                });
+              }
+            } catch (err) {
+              console.error('Error in filter validation:', err);
+            }
+          }
+        }, 1000);
+      }
+      
+      // Update PM2.5 layer filter
+      if (map.current.getLayer('pm25-layer')) {
+        const pm25Filter = ['all',
+          ['>', ['get', 'pm25_value'], currentPm25Threshold],
+          ['==', ['get', 'date'], formattedDateForFilter]
+        ];
+        map.current.setFilter('pm25-layer', pm25Filter);
       }
       
       // Update timestamp indicator
@@ -387,8 +508,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
                              (e.originalEvent.target as HTMLElement)?.closest('.location-marker');
       
       if (clickedOnMarker) {
-        e.preventDefault();
-        e.stopPropagation();
+        if (e.originalEvent) {
+          e.originalEvent.preventDefault();
+          e.originalEvent.stopPropagation();
+        }
       }
     });
     
@@ -412,13 +535,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         el.style.zIndex = '10'; // Make sure markers are above other elements (increased priority)
         el.style.transition = 'none'; // Remove any transition effects to make positioning instant
         
-        // Use a different color for markers with time series data
-        if (location.lng === -101.8504 && location.lat === 33.59076 || 
-            location.lng === -111.8722 && location.lat === 40.73639) {
-          el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
-        } else {
-          el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.bonnevilleSaltFlatsBlue.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
-        }
+        // All locations now use the same marker color
+        el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
+        
         
         // Create the marker with the custom element and disable animation
         const marker = new mapboxgl.Marker({
@@ -514,46 +633,242 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     function loadLocationData() {
       if (!map.current || !selectedLocation) return;
     
-    // Remove previous layers if they exist
-    if (map.current.getLayer('footprint-layer')) {
-      map.current.removeLayer('footprint-layer');
-    }
-    
-    if (map.current.getLayer('pm25-layer')) {
-      map.current.removeLayer('pm25-layer');
-    }
-    
-    if (map.current.getSource('footprint-data')) {
-      map.current.removeSource('footprint-data');
-    }
-    
-    try {
-      // Add the source for the selected location's tileset
-      map.current.addSource('footprint-data', {
-        type: 'vector',
-        url: `mapbox://${selectedLocation.tilesetId}`
+      // Save current view state before modifying the map
+      const savedCenter = map.current.getCenter();
+      const savedZoom = map.current.getZoom();
+      const savedBearing = map.current.getBearing();
+      const savedPitch = map.current.getPitch();
+      
+      // Flag to determine if we are in an animation (where we should preserve view)
+      const isAnimationRunning = isPlaying;
+      
+      console.log('Saving current map state before data reload:', {
+        zoom: savedZoom,
+        center: [savedCenter.lng, savedCenter.lat],
+        preservingView: isAnimationRunning
       });
+    
+      // Remove previous layers if they exist
+      if (map.current.getLayer('footprint-layer')) {
+        map.current.removeLayer('footprint-layer');
+      }
       
-      // Calculate intermediate steps for footprint color scale
-      const footprintMax = 0.8; // Fixed maximum
-      const footprintMin = Math.max(1e-7, currentFootprintThreshold);
-      const footprintStep = (footprintMax - footprintMin) / 5;
+      if (map.current.getLayer('pm25-layer')) {
+        map.current.removeLayer('pm25-layer');
+      }
       
-      // Create layer configuration based on the selected location
-      // Special case for Utah location
-      if (selectedLocation.lng === -111.8722 && selectedLocation.lat === 40.73639) {
-        // Add footprint layer for Utah data
+      if (map.current.getSource('footprint-data')) {
+        map.current.removeSource('footprint-data');
+      }
+      
+      if (map.current.getSource('pm25-data')) {
+        map.current.removeSource('pm25-data');
+      }
+      
+      try {
+        // Get the appropriate layer name and tileset for the selected location
+        let sourceLayerName = selectedLocation.layerName; // Default layer name
+        let tilesetIdToUse = selectedLocation.tilesetId;
+
+        // Special case for coordinates -101.8504, 33.59076
+        if (isSpecialCoordinate(selectedLocation.lng, selectedLocation.lat)) {
+          // Special coordinate handling
+          if (layerType === 'combined') {
+            // Combined view - load both footprint and PM2.5 data with separate sources
+            // Get footprint part info
+            const partFunction = getSpecialCoordinatePartFunction(selectedLocation.lng, selectedLocation.lat);
+            const footprintPartSuffix = partFunction(currentDate);
+            const footprintPartNum = parseInt(footprintPartSuffix.substring(1), 10);
+            const footprintTilesetId = formatSpecialCoordinateTilesetId(selectedLocation.lng, selectedLocation.lat, footprintPartNum);
+            const footprintSourceLayer = `footprints_20162020_p${footprintPartNum}`;
+            
+            // Get PM2.5 part info
+            const convolvedPartFunction = getSpecialCoordinateConvolvedPartFunction(selectedLocation.lng, selectedLocation.lat);
+            const pm25PartSuffix = convolvedPartFunction(currentDate);
+            const pm25PartNum = parseInt(pm25PartSuffix.substring(1), 10);
+            const pm25TilesetId = formatSpecialCoordinateConvolvedTilesetId(selectedLocation.lng, selectedLocation.lat, pm25PartNum);
+            const pm25SourceLayer = getConvolvedLayerName(selectedLocation.lng, selectedLocation.lat, pm25PartNum);
+            
+            console.log('Using combined view with:', {
+              coordinate: `${selectedLocation.lng}, ${selectedLocation.lat}`,
+              footprint: { part: footprintPartNum, tileset: footprintTilesetId, layer: footprintSourceLayer },
+              pm25: { part: pm25PartNum, tileset: pm25TilesetId, layer: pm25SourceLayer }
+            });
+            
+            // Add sources for both data types
+            map.current.addSource('footprint-data', {
+              type: 'vector',
+              url: `mapbox://${footprintTilesetId}`
+            });
+            
+            map.current.addSource('pm25-data', {
+              type: 'vector',
+              url: `mapbox://${pm25TilesetId}`
+            });
+            
+            // Add footprint layer
+            map.current.addLayer({
+              id: 'footprint-layer',
+              type: 'circle',
+              source: 'footprint-data',
+              'source-layer': footprintSourceLayer,
+              paint: {
+                'circle-radius': [
+                  'interpolate',
+                  ['exponential', 2],
+                  ['zoom'],
+                  3, 30,
+                  4, 25,
+                  5, 20,
+                  6, 18,
+                  7, 15,
+                  8, 12
+                ],
+                'circle-color': [
+                  'interpolate',
+                  ['linear'],
+                  ['get', 'value'],
+                  1e-7, colors.footprintScale[0],
+                  1e-5, colors.footprintScale[0],
+                  1e-4, colors.footprintScale[0],
+                  1e-3, colors.footprintScale[1],
+                  1e-2, colors.footprintScale[2],
+                  1e-1, colors.footprintScale[3],
+                  5e-1, colors.footprintScale[4],
+                  8e-1, colors.footprintScale[5]
+                ],
+                'circle-opacity': 0.9,
+                'circle-blur': 1.2,
+                'circle-stroke-width': 0
+              },
+              layout: {
+                visibility: 'visible'
+              },
+              filter: [
+                'all',
+                ['>', ['get', 'value'], currentFootprintThreshold],
+                ['==', ['get', 'date'], formatDateForFilter(currentDate)]
+              ]
+            });
+            
+            // Add PM2.5 layer
+            map.current.addLayer({
+              id: 'pm25-layer',
+              type: 'circle',
+              source: 'pm25-data',
+              'source-layer': pm25SourceLayer,
+              paint: {
+                'circle-radius': [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  3, 13,
+                  5, 18,
+                  8, 22,
+                  12, 18
+                ],
+                'circle-color': [
+                  'interpolate',
+                  ['linear'],
+                  ['get', 'pm25_value'],
+                  0, colors.pm25Scale[0],
+                  12, colors.pm25Scale[1],
+                  35, colors.pm25Scale[2],
+                  55, colors.pm25Scale[3],
+                  75, colors.pm25Scale[4],
+                  100, colors.pm25Scale[5]
+                ],
+                'circle-opacity': 0.95,
+                'circle-blur': 0.3,
+                'circle-stroke-width': 1.5,
+                'circle-stroke-color': 'rgba(10, 10, 10, 0.8)'
+              },
+              layout: {
+                visibility: 'visible'
+              },
+              filter: [
+                'all',
+                ['>', ['get', 'pm25_value'], currentPm25Threshold],
+                ['==', ['get', 'date'], formatDateForFilter(currentDate)]
+              ]
+            });
+            
+            // Make sure timestamp is visible
+            addTimestampIndicator();
+            
+            // If we're in an animation, restore the view state
+            if (isAnimationRunning) {
+              map.current.jumpTo({
+                center: savedCenter,
+                zoom: savedZoom,
+                bearing: savedBearing,
+                pitch: savedPitch
+              });
+            }
+            
+            return; // Skip the rest of the function
+          }
+          else if (layerType === 'footprint') {
+            // Footprint data - use 8-part split
+            const partFunction = getSpecialCoordinatePartFunction(selectedLocation.lng, selectedLocation.lat);
+            const partSuffix = partFunction(currentDate);
+            const partNum = parseInt(partSuffix.substring(1), 10);
+            tilesetIdToUse = formatSpecialCoordinateTilesetId(selectedLocation.lng, selectedLocation.lat, partNum);
+            sourceLayerName = `footprints_20162020_p${partNum}`;
+            console.log('Using 8-part split layer for footprints:', { 
+              coordinate: `${selectedLocation.lng}, ${selectedLocation.lat}`,
+              part: partNum, 
+              date: currentDate, 
+              layer: sourceLayerName, 
+              tileset: tilesetIdToUse 
+            });
+          } 
+          else if (layerType === 'pm25') {
+            // PM2.5 data - use 3-part split
+            const convolvedPartFunction = getSpecialCoordinateConvolvedPartFunction(selectedLocation.lng, selectedLocation.lat);
+            const partSuffix = convolvedPartFunction(currentDate);
+            const partNum = parseInt(partSuffix.substring(1), 10);
+            tilesetIdToUse = formatSpecialCoordinateConvolvedTilesetId(selectedLocation.lng, selectedLocation.lat, partNum);
+            sourceLayerName = getConvolvedLayerName(selectedLocation.lng, selectedLocation.lat, partNum);
+            console.log('Using 3-part split layer for convolved PM2.5:', { 
+              coordinate: `${selectedLocation.lng}, ${selectedLocation.lat}`,
+              part: partNum, 
+              date: currentDate, 
+              layer: sourceLayerName, 
+              tileset: tilesetIdToUse 
+            });
+          }
+        } else {
+          // This code block shouldn't be reached anymore since all coordinates are now handled as special
+          // But keeping it as a fallback
+          console.warn('Fallback code for non-special coordinates reached - this should not happen');
+          const datePart = determineFootprintCoordinate(currentDate);
+          const baseId = tilesetIdToUse.replace('_p1', '').replace('_p2', '').replace('_p3', '');
+          tilesetIdToUse = `${baseId}_${datePart}`;
+          sourceLayerName = `footprints_20162020_${datePart}`;
+          console.log('Fallback: Using layer:', { part: datePart, layer: sourceLayerName, tileset: tilesetIdToUse });
+          console.log('Fallback: Using tileset ID:', tilesetIdToUse);
+          console.log('Fallback: Using source layer:', sourceLayerName);
+        }
+
+        // If we haven't returned early (combined case), add a single source and both layers
+        map.current.addSource('footprint-data', {
+          type: 'vector',
+          url: `mapbox://${tilesetIdToUse}`
+        });
+        
+        // Add footprint layer
         map.current.addLayer({
           id: 'footprint-layer',
           type: 'circle',
           source: 'footprint-data',
-          'source-layer': selectedLocation.layerName,
+          'source-layer': sourceLayerName,
           paint: {
             'circle-radius': [
               'interpolate',
               ['exponential', 2],
               ['zoom'],
-              3, 30,  // Much larger at zoom level 3
+              3, 30,
               4, 25,
               5, 20,
               6, 18,
@@ -564,45 +879,40 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               'interpolate',
               ['linear'],
               ['get', 'value'],
-              1e-7, colors.footprintScale[0], // Lightest for very low values
+              1e-7, colors.footprintScale[0],
               1e-5, colors.footprintScale[0],
               1e-4, colors.footprintScale[0],
-              1e-3, colors.footprintScale[1], // Start gradient from 0.001
+              1e-3, colors.footprintScale[1],
               1e-2, colors.footprintScale[2],
-              1e-1, colors.footprintScale[3], // Medium
-              5e-1, colors.footprintScale[4], // Darker high
-              8e-1, colors.footprintScale[5] // Darkest for highest values
+              1e-1, colors.footprintScale[3],
+              5e-1, colors.footprintScale[4],
+              8e-1, colors.footprintScale[5]
             ],
             'circle-opacity': 0.9,
             'circle-blur': 1.2,
             'circle-stroke-width': 0
           },
           layout: {
-            visibility: layerType === 'footprint' ? 'visible' : 'none'
+            visibility: layerType === 'footprint' || layerType === 'combined' ? 'visible' : 'none'
           },
-          filter: [
-            'all',
-            ['==', ['get', 'layer_type'], 'f'],
-            ['>', ['get', 'value'], currentFootprintThreshold],
-            ['==', ['get', 'date'], formatDateForFilter(currentDate)]
-          ]
+          filter: getFootprintFilter(currentDate, currentFootprintThreshold)
         });
         
-        // Add PM2.5 layer for Utah data
+        // Add PM2.5 layer
         map.current.addLayer({
           id: 'pm25-layer',
           type: 'circle',
           source: 'footprint-data',
-          'source-layer': selectedLocation.layerName,
+          'source-layer': sourceLayerName,
           paint: {
             'circle-radius': [
               'interpolate',
               ['linear'],
               ['zoom'],
-              3, 10,
-              5, 15,
-              8, 18,
-              12, 15
+              3, 13,
+              5, 18,
+              8, 22,
+              12, 18
             ],
             'circle-color': [
               'interpolate',
@@ -615,197 +925,38 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               75, colors.pm25Scale[4],
               100, colors.pm25Scale[5]
             ],
-            'circle-opacity': 0.85,
-            'circle-blur': 0.5,
-            'circle-stroke-width': 1.2,
-            'circle-stroke-color': 'rgba(40, 40, 40, 0.7)'
+            'circle-opacity': 0.95,
+            'circle-blur': 0.3,
+            'circle-stroke-width': 1.5,
+            'circle-stroke-color': 'rgba(10, 10, 10, 0.8)'
           },
           layout: {
-            visibility: layerType === 'pm25' ? 'visible' : 'none'
+            visibility: layerType === 'pm25' || layerType === 'combined' ? 'visible' : 'none'
           },
           filter: [
             'all',
-            ['==', ['get', 'layer_type'], 'f'],
             ['>', ['get', 'pm25_value'], currentPm25Threshold],
             ['==', ['get', 'date'], formatDateForFilter(currentDate)]
           ]
         });
-      }
-      // Special case for Texas location
-      else if (selectedLocation.lng === -101.8504 && selectedLocation.lat === 33.59076) {
-        // Add footprint layer for Texas data
-        map.current.addLayer({
-          id: 'footprint-layer',
-          type: 'circle',
-          source: 'footprint-data',
-          'source-layer': selectedLocation.layerName,
-          paint: {
-            'circle-radius': [
-              'interpolate',
-              ['exponential', 2],
-              ['zoom'],
-              3, 30,  // Much larger at zoom level 3
-              4, 25,
-              5, 20,
-              6, 18,
-              7, 15,
-              8, 12
-            ],
-            'circle-color': [
-              'interpolate',
-              ['linear'],
-              ['get', 'value'],
-              1e-7, colors.footprintScale[0], // Lightest for very low values
-              1e-5, colors.footprintScale[0],
-              1e-4, colors.footprintScale[0],
-              1e-3, colors.footprintScale[1], // Start gradient from 0.001
-              1e-2, colors.footprintScale[2],
-              1e-1, colors.footprintScale[3], // Medium
-              5e-1, colors.footprintScale[4], // Darker high
-              8e-1, colors.footprintScale[5] // Darkest for highest values
-            ],
-            'circle-opacity': 0.9,
-            'circle-blur': 1.2,
-            'circle-stroke-width': 0
-          },
-          layout: {
-            visibility: layerType === 'footprint' ? 'visible' : 'none'
-          },
-          filter: [
-            'all',
-            ['>', ['get', 'value'], currentFootprintThreshold],
-            ['==', ['get', 'date'], formatDateForFilter(currentDate)]
-          ]
-        });
         
-        // Add PM2.5 layer for Texas data
-        map.current.addLayer({
-          id: 'pm25-layer',
-          type: 'circle',
-          source: 'footprint-data',
-          'source-layer': selectedLocation.layerName,
-          paint: {
-            'circle-radius': [
-              'interpolate',
-              ['linear'],
-              ['zoom'],
-              3, 10,
-              5, 15,
-              8, 18,
-              12, 15
-            ],
-            'circle-color': [
-              'interpolate',
-              ['linear'],
-              ['get', 'pm25'],
-              0, colors.pm25Scale[0],
-              12, colors.pm25Scale[1],
-              35, colors.pm25Scale[2],
-              55, colors.pm25Scale[3],
-              75, colors.pm25Scale[4],
-              100, colors.pm25Scale[5]
-            ],
-            'circle-opacity': 0.85,
-            'circle-blur': 0.5,
-            'circle-stroke-width': 1.2,
-            'circle-stroke-color': 'rgba(40, 40, 40, 0.7)'
-          },
-          layout: {
-            visibility: layerType === 'pm25' ? 'visible' : 'none'
-          },
-          filter: ['>', ['get', 'pm25'], currentPm25Threshold]
-        });
-      }
-      // Regular location case
-      else {
-        // Add footprint layer with dynamic range and threshold filter
-        map.current.addLayer({
-          id: 'footprint-layer',
-          type: 'circle',
-          source: 'footprint-data',
-          'source-layer': selectedLocation.layerName,
-          paint: {
-            'circle-radius': [
-              'interpolate',
-              ['exponential', 2],
-              ['zoom'],
-              3, 20,  // Much larger at zoom level 3
-              4, 20,
-              5, 20,
-              6, 18,
-              7, 15,
-              8, 12
-            ],
-            'circle-color': [
-              'interpolate',
-              ['linear'],
-              // Check if 'value' property exists, otherwise use 'footprint'
-              ['coalesce', ['get', 'value'], ['get', 'footprint']],
-              1e-7, colors.footprintScale[0], // Lightest for very low values
-              1e-5, colors.footprintScale[0],
-              1e-4, colors.footprintScale[0],
-              1e-3, colors.footprintScale[1], // Start gradient from 0.001
-              1e-2, colors.footprintScale[2],
-              1e-1, colors.footprintScale[3], // Medium
-              5e-1, colors.footprintScale[4], // Darker high
-              8e-1, colors.footprintScale[5] // Darkest for highest values
-            ],
-            'circle-opacity': 0.9,
-            'circle-blur': 1.2,
-            'circle-stroke-width': 0
-          },
-          layout: {
-            visibility: layerType === 'footprint' ? 'visible' : 'none'
-          },
-          filter: ['>', ['coalesce', ['get', 'footprint'], 0], currentFootprintThreshold]
-        });
+        // Make sure timestamp is visible
+        addTimestampIndicator();
         
-        // Add PM2.5 layer
-        map.current.addLayer({
-          id: 'pm25-layer',
-          type: 'circle',
-          source: 'footprint-data',
-          'source-layer': selectedLocation.layerName,
-          paint: {
-            'circle-radius': [
-              'interpolate',
-              ['linear'],
-              ['zoom'],
-              3, 10,
-              5, 15,
-              8, 18,
-              12, 15
-            ],
-            'circle-color': [
-              'interpolate',
-              ['linear'],
-              ['get', 'pm25'],
-              0, colors.pm25Scale[0],
-              12, colors.pm25Scale[1],
-              35, colors.pm25Scale[2],
-              55, colors.pm25Scale[3],
-              75, colors.pm25Scale[4],
-              100, colors.pm25Scale[5]
-            ],
-            'circle-opacity': 0.85,
-            'circle-blur': 0.5,
-            'circle-stroke-width': 1.2,
-            'circle-stroke-color': 'rgba(40, 40, 40, 0.7)'
-          },
-          layout: {
-            visibility: layerType === 'pm25' ? 'visible' : 'none'
-          },
-          filter: ['>', ['get', 'pm25'], currentPm25Threshold]
-        });
+        // If we're in an animation, restore the view state
+        if (isAnimationRunning) {
+          map.current.jumpTo({
+            center: savedCenter,
+            zoom: savedZoom,
+            bearing: savedBearing,
+            pitch: savedPitch
+          });
+        }
+      } catch (err) {
+        console.error('Error loading location data:', err);
       }
-      
-      // Make sure timestamp is visible
-      addTimestampIndicator();
-    } catch (err) {
-      console.error('Error loading location data:', err);
     }
-    }
-  }, [selectedLocation, layerType, currentFootprintThreshold, currentPm25Threshold, currentDate, addTimestampIndicator, dataLoadAttempt]);
+  }, [selectedLocation, layerType, currentFootprintThreshold, currentPm25Threshold, currentDate, addTimestampIndicator, dataLoadAttempt, isPlaying]);
   
   // Manage marker visibility when a location is selected
   useEffect(() => {
@@ -868,12 +1019,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         el.style.backgroundSize = 'cover';
         el.style.cursor = 'pointer';
         
-        if (location.lng === -101.8504 && location.lat === 33.59076 || 
-            location.lng === -111.8722 && location.lat === 40.73639) {
-          el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
-        } else {
-          el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.bonnevilleSaltFlatsBlue.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
-        }
+        // All restored markers use the same blue color too
+        el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
+        
         
         // Create a new marker and add it to the map
         const newMarker = new mapboxgl.Marker({

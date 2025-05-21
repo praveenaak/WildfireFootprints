@@ -7,6 +7,7 @@ export interface Location {
   layerName: string;
   name: string;
   date?: string;
+  hasTimeSeriesData?: boolean;
 }
 
 export interface MapboxViewerProps {
@@ -29,7 +30,7 @@ export interface MultiLocationMapboxProps {
   timestamp?: string;
 }
 
-export type LayerType = 'footprint' | 'pm25';
+export type LayerType = 'footprint' | 'pm25' | 'combined';
 
 export interface DataRange {
   min: number;

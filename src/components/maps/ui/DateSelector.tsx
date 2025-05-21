@@ -75,6 +75,14 @@ const ChevronIcon = styled.div`
   color: ${colors.textSecondary};
 `;
 
+const DataAvailabilityNote = styled.div`
+  font-family: ${typography.fontFamily};
+  font-size: ${typography.sizes.small};
+  color: ${colors.textSecondary};
+  text-align: center;
+  margin-top: ${spacing.xs};
+`;
+
 /**
  * Date selector component that allows users to select dates from 2016-2020 
  * for August, September, and October 1st
@@ -88,10 +96,12 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
     return null;
   }
 
-  // Parse the current date
-  const year = currentDate.substring(0, 4);
-  const month = currentDate.substring(4, 6);
-  const day = currentDate.substring(6, 8);
+  // Parse the current date with safe defaults
+  const defaultDate = '20160801';
+  const safeCurrentDate = currentDate || defaultDate;
+  const year = safeCurrentDate.substring(0, 4);
+  const month = safeCurrentDate.substring(4, 6);
+  const day = safeCurrentDate.substring(6, 8);
   
   // Generate year options (2016-2020)
   const years = ['2016', '2017', '2018', '2019', '2020'];
@@ -104,11 +114,14 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   ];
   
   // Generate day options based on selected month
-  const getDaysForMonth = (month: string) => {
-    if (month === '10') {
+  const getDaysForMonth = (monthVal: string) => {
+    // Handle null/undefined month, defaulting to August (08)
+    const monthValue = monthVal || '08';
+    
+    if (monthValue === '10') {
       // Only show October 1st
       return [{ value: '01', label: '1' }];
-    } else if (month === '09') {
+    } else if (monthValue === '09') {
       // September has 30 days
       return Array.from({ length: 30 }, (_, i) => {
         const day = String(i + 1).padStart(2, '0');
@@ -138,7 +151,7 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
     let newDay = day;
     if (newMonth === '10') {
       newDay = '01';
-    } else if (newMonth === '09' && parseInt(day) > 30) {
+    } else if (newMonth === '09' && parseInt(newDay) > 30) {
       // Adjust day if changing to September and day is 31
       newDay = '30';
     }
@@ -192,6 +205,9 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
           </ChevronIcon>
         </SelectWrapper>
       </SelectorRow>
+      <DataAvailabilityNote>
+        Note: Data is available from August 1 to September 30, and October 1
+      </DataAvailabilityNote>
     </SelectorContainer>
   );
 }; 

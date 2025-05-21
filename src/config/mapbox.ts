@@ -10,11 +10,11 @@ const getEnvVariable = (key: string): string => {
 
 export const MAPBOX_CONFIG = {
   accessToken: getEnvVariable('MAPBOX_TOKEN') || 'your_default_token_here',
-  // Center in western North America to show all marker locations
+  // Center in western US
   defaultCenter: [
-    parseFloat(getEnvVariable('MAPBOX_CENTER_LNG') || '-111'), 
-    parseFloat(getEnvVariable('MAPBOX_CENTER_LAT') || '39')
+    parseFloat(getEnvVariable('MAPBOX_CENTER_LNG') || '-115'), 
+    parseFloat(getEnvVariable('MAPBOX_CENTER_LAT') || '40')
   ] as [number, number],
-  defaultZoom: parseInt(getEnvVariable('MAPBOX_ZOOM') || '4'),
+  defaultZoom: parseFloat(getEnvVariable('MAPBOX_ZOOM') || '4.5'),
   styleUrl: getEnvVariable('MAPBOX_STYLE') || 'mapbox://styles/pkulandh/cm9iyi6qq00jo01rce7xjcfay'
 };

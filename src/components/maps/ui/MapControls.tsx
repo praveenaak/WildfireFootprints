@@ -23,7 +23,7 @@ interface MapControlsProps {
 // Styled components
 const ControlsContainer = styled.div`
   position: absolute;
-  top: ${spacing.lg};
+  top: 180px;
   left: ${spacing.lg};
   z-index: ${zIndices.mapControls};
   max-width: 320px;
@@ -113,6 +113,10 @@ const RecordingDot = styled.span`
   }
 `;
 
+const AdditionalInfoText = styled(Typography)`
+  margin-top: ${spacing.sm};
+`;
+
 // Convert threshold to log scale for slider
 const logScale = (value: number) => Math.log10(value);
 const inverseLogScale = (value: number) => Math.pow(10, value);
@@ -133,8 +137,8 @@ export const MapControls: React.FC<MapControlsProps> = ({
   currentDate,
   onBackClick,
 }) => {
-  const isTimeSeriesLocation = selectedLocation?.lng === -101.8504 && selectedLocation?.lat === 33.59076 ||
-                              selectedLocation?.lng === -111.8722 && selectedLocation?.lat === 40.73639;
+  // All locations now support time series data
+  const isTimeSeriesLocation = !!selectedLocation;
   
   const handleSliderChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = inverseLogScale(parseFloat(event.target.value));
@@ -176,10 +180,18 @@ export const MapControls: React.FC<MapControlsProps> = ({
           >
             PM2.5 Data
           </Button>
+          <Button 
+            onClick={() => setLayerType('combined')}
+            variant="secondary"
+            fullWidth
+            isActive={layerType === 'combined'}
+          >
+            Combined
+          </Button>
         </ButtonGroup>
 
         <ThresholdContainer>
-          {layerType === 'footprint' ? (
+          {layerType === 'footprint' || layerType === 'combined' ? (
             <>
               <Typography variant="body" color={colors.textPrimary}>
                 Footprint Threshold: {currentFootprintThreshold.toExponential(4)}
@@ -198,6 +210,12 @@ export const MapControls: React.FC<MapControlsProps> = ({
                   <span>{MAX_THRESHOLD.toExponential(4)}</span>
                 </SliderLabels>
               </SliderContainer>
+
+              {layerType === 'combined' && (
+                <AdditionalInfoText variant="body" align="center">
+                  Also showing PM2.5 in μg/m³
+                </AdditionalInfoText>
+              )}
             </>
           ) : (
             <Typography variant="body" align="center">

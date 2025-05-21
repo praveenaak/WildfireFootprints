@@ -38,12 +38,12 @@ export const colors = {
   
   // PM2.5 Scale
   pm25Scale: [
-    '#e6ffed',
-    '#b7eb8f',
-    '#ffe58f',
-    '#ffbb96',
-    '#ff7875',
-    '#ff4d4f'
+    '#c8f2d5',  // Very Good - darker green
+    '#73d13d',  // Good - darker vibrant green
+    '#faad14',  // Moderate - darker yellow/orange
+    '#ff7a45',  // Unhealthy for Sensitive - darker orange
+    '#f5222d',  // Unhealthy - vibrant red
+    '#a8071a'   // Very Unhealthy - deep red
   ]
 };
 
