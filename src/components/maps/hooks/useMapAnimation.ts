@@ -116,9 +116,9 @@ export const useMapAnimation = ({
         END_DATE = new Date('2020-10-01');
       }
       else {
-        // Default range for other locations
+        // Default range for all locations - updated to include all years 2016-2020
         START_DATE = new Date('2016-08-01');
-        END_DATE = new Date('2016-10-01');
+        END_DATE = new Date('2020-10-01');
       }
       
       const ANIMATION_DELAY = 1000; // ms between frames - increased for better visibility
