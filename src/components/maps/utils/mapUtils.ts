@@ -38,9 +38,7 @@ export const parseCoordinates = (): Location[] => {
   });
 };
 
-
 const DEFAULT_DATE = '20160801';
-
 
 export const formatDate = (dateString: string): string => {
   if (!dateString) {
@@ -121,7 +119,7 @@ export const determineFootprintCoordinate = (dateString: string): string => {
   // Parse date from YYYYMMDD format
   if (dateString.length !== 8) {
     console.warn('Invalid date format for determining special coordinate part:', dateString);
-    return 'p1'; // Default to p1
+    return 'p1'; //Default to p1
   }
   
   const year = parseInt(dateString.substring(0, 4), 10);
@@ -261,7 +259,7 @@ export const formatSpecialCoordinateConvolvedTilesetId = (lng: number, lat: numb
   const latStr = lat.toString().replace('.', '');
   const latFirstThreeDigits = latStr.substring(0, 3);
   
-  // Create the source name with the format: pkulandh.c-118_346_p1
+  // Create the source name with the format: pkulandh.c-118_346_p1 (example)
   return `pkulandh.c-${lngInteger}_${latFirstThreeDigits}_p${partNum}`;
 };
 
