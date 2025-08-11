@@ -52,7 +52,6 @@ const Footer: React.FC = () => {
   return (
     <FooterContainer>
       <FooterLogoContainer>
-        {/* You can add a logo image here if needed */}
       </FooterLogoContainer>
       
       <LinksContainer>

@@ -10,8 +10,8 @@ interface MapboxViewerProps {
   center: [number, number];
   zoom: number;
   style?: React.CSSProperties;
-  minFootprintThreshold?: number; // Add threshold prop with default value in component
-  minPm25Threshold?: number; // Add threshold prop with default value in component
+  minFootprintThreshold?: number;
+  minPm25Threshold?: number;
 }
 
 interface SelectedLocation {
@@ -27,8 +27,8 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
   center,
   zoom,
   style = { width: '100%', height: '100vh' },
-  minFootprintThreshold = 1e-7, // Adjust this value based on your data
-  minPm25Threshold = 0 // Set to 0 to include all PM2.5 values
+  minFootprintThreshold = 1e-7,
+  minPm25Threshold = 0
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -37,14 +37,10 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
   const [layerType, setLayerType] = useState<'footprint' | 'pm25'>('footprint');
   const [selectedLocation, setSelectedLocation] = useState<SelectedLocation | null>(null);
   
-  // Initialize map when component mounts
   useEffect(() => {
     if (!mapContainer.current) return;
     
-    // Set Mapbox token
     mapboxgl.accessToken = accessToken;
-    
-    // Create map instance
     map.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: MAPBOX_CONFIG.styleUrl,
@@ -52,30 +48,21 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
       zoom: zoom
     });
     
-    // Add navigation controls
     map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    
-    // Add fullscreen control
     map.current.addControl(new mapboxgl.FullscreenControl());
     
-    // Initialize map with data when it loads
     map.current.on('load', () => {
       if (!map.current) return;
-      
-      // Add the source for our tileset
       map.current.addSource('footprint-data', {
         type: 'vector',
         url: `mapbox://${tilesetId}`
       });
-      
-      // Add footprint heatmap layer to create a smooth blended effect
       map.current.addLayer({
         id: 'footprint-heatmap',
         type: 'heatmap',
         source: 'footprint-data',
         'source-layer': 'location_-111-9dkxy7',
         paint: {
-          // Increase the heatmap weight based on footprint value
           'heatmap-weight': [
             'interpolate',
             ['linear'],
@@ -83,7 +70,6 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             1e-7, 0.1,
             0.8, 1
           ],
-          // Increase the heatmap color weight by zoom level
           'heatmap-intensity': [
             'interpolate',
             ['linear'],
@@ -91,7 +77,6 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             3, 1,
             8, 0.5
           ],
-          // Color ramp for heatmap - lighter to darker mahogany colors
           'heatmap-color': [
             'interpolate',
             ['linear'],
@@ -104,7 +89,6 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             0.85, colors.footprintScale[4],
             1, colors.footprintScale[5] // Darkest
           ],
-          // Adjust the heatmap radius by zoom level
           'heatmap-radius': [
             'interpolate',
             ['linear'],
@@ -112,7 +96,6 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             3, 15,
             8, 5
           ],
-          // Transition from heatmap to circle layer by zoom level
           'heatmap-opacity': [
             'interpolate',
             ['linear'],
@@ -126,8 +109,6 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         },
         filter: ['>', ['get', 'footprint'], minFootprintThreshold]
       });
-      
-      // Add footprint layer as circle points with logarithmic scale for coloring
       map.current.addLayer({
         id: 'footprint-layer',
         type: 'circle',
@@ -138,26 +119,24 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             'interpolate',
             ['linear'],
             ['zoom'],
-            3, 25,  // Much larger at zoom level 3
+            3, 25,
             4, 20,
             5, 18,
             8, 15,
             12, 10
           ],
           'circle-color': [
-            // Using a logarithmic-like scale for values between minFootprintThreshold and 0.8
             'interpolate',
             ['linear'],
-            // Apply a pseudo-log transformation to the footprint value
             ['get', 'footprint'],
-            1e-7, colors.footprintScale[0], // Lightest for very low values
+            1e-7, colors.footprintScale[0],
             1e-5, colors.footprintScale[0],
             1e-4, colors.footprintScale[0],
-            1e-3, colors.footprintScale[1], // Start gradient from 0.001
+            1e-3, colors.footprintScale[1],
             1e-2, colors.footprintScale[2],
             1e-1, colors.footprintScale[3],
             5e-1, colors.footprintScale[4],
-            8e-1, colors.footprintScale[5] // Darkest for highest values
+            8e-1, colors.footprintScale[5]
           ],
           'circle-opacity': 0.9,
           'circle-stroke-width': 0,
@@ -168,8 +147,6 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         },
         filter: ['>', ['get', 'footprint'], minFootprintThreshold]
       });
-      
-      // Add PM2.5 layer as circle points
       map.current.addLayer({
         id: 'pm25-layer',
         type: 'circle',
@@ -189,12 +166,12 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
             'interpolate',
             ['linear'],
             ['get', 'pm25'],
-            0, '#e6ffed', // Very clean air
-            12, '#b7eb8f', // Good air quality (EPA standard)
-            35, '#ffe58f', // Moderate air quality (EPA standard)
-            55, '#ffbb96', // Unhealthy for sensitive groups
-            75, '#ff7875', // Unhealthy
-            100, '#ff4d4f'  // Very unhealthy
+            0, '#e6ffed',
+            12, '#b7eb8f',
+            35, '#ffe58f',
+            55, '#ffbb96',
+            75, '#ff7875',
+            100, '#ff4d4f'
           ],
           'circle-opacity': 0.9,
           'circle-stroke-width': 1,
@@ -206,7 +183,10 @@ const MapboxViewer: React.FC<MapboxViewerProps> = ({
         filter: ['>', ['get', 'pm25'], minPm25Threshold]
       });
 
-      // Initialize hover popup
+      hoverPopup.current = new mapboxgl.Popup({
+        closeButton: false,
+        closeOnClick: false
+      });
       hoverPopup.current = new mapboxgl.Popup({
         closeButton: false,
         closeOnClick: false

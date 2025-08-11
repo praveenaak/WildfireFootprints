@@ -83,10 +83,6 @@ const DataAvailabilityNote = styled.div`
   margin-top: ${spacing.xs};
 `;
 
-/**
- * Date selector component that allows users to select dates from 2016-2020 
- * for August, September, and October 1st
- */
 export const DateSelector: React.FC<DateSelectorProps> = ({ 
   currentDate,
   setCurrentDate,

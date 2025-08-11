@@ -16,7 +16,7 @@ const ContentContainer = styled.main`
 
 const Layout: React.FC = () => {
   const location = useLocation();
-  const isMapPage = location.pathname === '/map';
+  const isMapPage = location.pathname === '/' || location.pathname === '/map';
   
   return (
     <PageContainer>

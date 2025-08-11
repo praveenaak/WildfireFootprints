@@ -5,17 +5,12 @@ interface ErrorPageProps {
   error?: Error | null;
 }
 
-/**
- * Provides a user-friendly error display with option to navigate back to home
- */
 const ErrorPage: React.FC<ErrorPageProps> = ({ error }) => {
   const navigate = useNavigate();
   const routeError = useRouteError();
   
-  // Determine if this is a 404 error
   const is404 = isRouteErrorResponse(routeError) && routeError.status === 404;
   
-  // Get error message from either prop or route error
   const errorMessage = error?.message || 
     (isRouteErrorResponse(routeError) ? routeError.statusText : 'An unexpected error occurred');
 

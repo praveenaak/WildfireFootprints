@@ -13,6 +13,10 @@ export const routes: RouteObject[] = [
     children: [
       {
         index: true,
+        element: <MapPage />
+      },
+      {
+        path: 'home',
         element: <HomePage />
       },
       {

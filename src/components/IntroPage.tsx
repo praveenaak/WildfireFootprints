@@ -1,9 +1,3 @@
-/**
- * IntroPage - Welcome page with app overview and demo access
- *
- * @param {Function} onComplete - Callback when user enters the main app
- */
-
 import React, { useState } from 'react';
 import { Github, Info, MapPin, MessageSquare, Play, X, Flame } from 'lucide-react';
 import './IntroPage.css';
@@ -16,12 +10,10 @@ const IntroPage: React.FC<IntroPageProps> = ({ onComplete }) => {
   const [activeSection, setActiveSection] = useState('about');
   const [showDemoModal, setShowDemoModal] = useState(false);
 
-  // Handle opening demo modal
   const handleOpenDemo = () => {
     setShowDemoModal(true);
   };
 
-  // Handle closing demo modal
   const handleCloseDemo = () => {
     setShowDemoModal(false);
   };

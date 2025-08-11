@@ -1,12 +1,8 @@
-// src/styles/GlobalStyles.tsx
 import { createGlobalStyle } from 'styled-components';
 import { colors, typography, spacing, transitions } from './theme';
 
 const GlobalStyles = createGlobalStyle`
-  /* Import fonts */
   @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap');
-
-  /* CSS Reset */
   *, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
@@ -98,7 +94,6 @@ const GlobalStyles = createGlobalStyle`
     border-radius: 3px;
   }
 
-  /* Utility Classes */
   .text-center {
     text-align: center;
   }
@@ -110,18 +105,15 @@ const GlobalStyles = createGlobalStyle`
     padding: 0 ${spacing.md};
   }
 
-  /* Mapbox specific styles */
   .mapbox-container {
     width: 100%;
     height: 100vh;
   }
 
-  /* Style for map controls */
   .mapboxgl-ctrl-group {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   }
 
-  /* Location marker styles */
   .location-marker {
     will-change: transform;
     backface-visibility: hidden;
@@ -147,7 +139,6 @@ const GlobalStyles = createGlobalStyle`
     z-index: 20 !important;
   }
 
-  /* Marker popup styles */
   .mapboxgl-popup-content {
     padding: 12px;
     max-width: 200px;
@@ -182,26 +173,22 @@ const GlobalStyles = createGlobalStyle`
     border-width: 8px !important;
   }
 
-  /* Improve marker performance */
   .mapboxgl-marker {
     transition: none !important;
     will-change: transform;
-    transform: translate(-50%, -100%); /* Center the marker correctly */
+    transform: translate(-50%, -100%);
   }
 
-  /* Custom legend styles */
   #map-legend {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
     border: 1px solid rgba(255, 255, 255, 0.1);
     font-family: ${typography.fontFamily};
   }
 
-  /* Override default map page padding for full screen */
   .map-page {
     padding: 0 !important;
   }
 
-  /* Media queries for responsive design */
   @media (max-width: 768px) {
     h1 {
       font-size: 28pt;

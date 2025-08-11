@@ -237,8 +237,6 @@ export const MapControls: React.FC<MapControlsProps> = ({
             </DateDisplay>
             <Button
               onClick={() => {
-                console.log('Play/Pause button clicked, current state:', isPlaying);
-                // This is the button in the UI
                 toggleAnimation();
               }}
               variant="secondary"

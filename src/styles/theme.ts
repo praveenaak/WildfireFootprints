@@ -1,4 +1,3 @@
-// src/styles/theme.ts
 export const colors = {
   // Brand Colors from design system
   olympicParkObsidian: '#1a1a1a',

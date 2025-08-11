@@ -10,7 +10,6 @@ const getEnvVariable = (key: string): string => {
 
 export const MAPBOX_CONFIG = {
   accessToken: getEnvVariable('MAPBOX_TOKEN') || 'your_default_token_here',
-  // Center in western US
   defaultCenter: [
     parseFloat(getEnvVariable('MAPBOX_CENTER_LNG') || '-115'), 
     parseFloat(getEnvVariable('MAPBOX_CENTER_LAT') || '40')

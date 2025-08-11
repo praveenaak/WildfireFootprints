@@ -9,9 +9,6 @@ export interface Location {
   isTimeSeries?: boolean;
 }
 
-/**
- * Custom hook for managing map data and state
- */
 export const useMapData = (initialCenter: [number, number], initialZoom: number) => {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [layerType, setLayerType] = useState<'footprint' | 'pm25'>('footprint');
@@ -30,11 +27,8 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
     location: Location;
   }[]>([]);
 
-  // Handle layer type change
   const handleLayerChange = (type: 'footprint' | 'pm25') => {
     setLayerType(type);
-    
-    // Set visibility of layers based on the selected layer type
     if (mapRef.current && mapRef.current.getStyle()) {
       if (mapRef.current.getLayer('footprint-layer')) {
         mapRef.current.setLayoutProperty(
@@ -54,7 +48,6 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
     }
   };
 
-  // Handle threshold changes
   const handleThresholdChange = (type: 'increase' | 'decrease') => {
     if (layerType === 'footprint') {
       const newThreshold = type === 'increase' 
@@ -63,7 +56,6 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
       
       setCurrentFootprintThreshold(newThreshold);
       
-      // Update filter if layer exists
       if (mapRef.current && mapRef.current.getLayer('footprint-layer')) {
         updateFootprintFilter(newThreshold);
       }
@@ -74,14 +66,12 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
       
       setCurrentPm25Threshold(newThreshold);
       
-      // Update filter if layer exists
       if (mapRef.current && mapRef.current.getLayer('pm25-layer')) {
         updatePm25Filter(newThreshold);
       }
     }
   };
 
-  // Update footprint filter based on location and threshold
   const updateFootprintFilter = (threshold: number) => {
     if (!mapRef.current || !selectedLocation) return;
     
@@ -89,9 +79,7 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
     
     let filter;
     if (selectedLocation.isTimeSeries) {
-      // For locations with time series data
       if (selectedLocation.layerName === 'layer_type') {
-        // For Utah location with layer_type field
         filter = [
           'all',
           ['==', ['get', 'layer_type'], 'footprint'],
@@ -99,7 +87,6 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
           ['==', ['get', 'date'], formattedDate]
         ];
       } else {
-        // For Texas location
         filter = [
           'all',
           ['>', ['get', 'value'], threshold],
@@ -107,14 +94,12 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
         ];
       }
     } else {
-      // For regular locations
       filter = ['>', ['coalesce', ['get', 'footprint'], 0], threshold];
     }
     
     mapRef.current.setFilter('footprint-layer', filter);
   };
 
-  // Update PM2.5 filter based on location and threshold
   const updatePm25Filter = (threshold: number) => {
     if (!mapRef.current || !selectedLocation) return;
     
@@ -122,9 +107,7 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
     
     let filter;
     if (selectedLocation.isTimeSeries) {
-      // For locations with time series data
       if (selectedLocation.layerName === 'layer_type') {
-        // For Utah location with layer_type field
         filter = [
           'all',
           ['==', ['get', 'layer_type'], 'convolved'],
@@ -132,18 +115,15 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
           ['==', ['get', 'date'], formattedDate]
         ];
       } else {
-        // For other time series locations
         filter = ['>', ['get', 'pm25'], threshold];
       }
     } else {
-      // For regular locations
       filter = ['>', ['get', 'pm25'], threshold];
     }
     
     mapRef.current.setFilter('pm25-layer', filter);
   };
 
-  // Toggle animation
   const toggleAnimation = () => {
     if (isPlaying) {
       stopAnimation();
@@ -153,7 +133,6 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
     }
   };
 
-  // Stop animation
   const stopAnimation = () => {
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
@@ -163,11 +142,8 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
     setIsPlaying(false);
   };
 
-  // Reset view to show all locations
   const resetView = () => {
-    // Clear data layers before resetting
     if (mapRef.current) {
-      // Remove layers if they exist
       if (mapRef.current.getLayer('footprint-layer')) {
         mapRef.current.removeLayer('footprint-layer');
       }
@@ -180,19 +156,16 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
         mapRef.current.removeSource('footprint-data');
       }
       
-      // Reset the view to show all locations
       mapRef.current.jumpTo({
         center: initialCenter,
         zoom: initialZoom
       });
     }
     
-    // Stop any animation and reset selected location
     stopAnimation();
     setSelectedLocation(null);
   };
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       stopAnimation();
