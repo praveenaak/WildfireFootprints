@@ -154,7 +154,7 @@ const generatePm25LegendItems = (min: number, max: number) => {
   ));
 };
 
-export const MapLegend: React.FC<MapLegendProps> = ({
+export const MapLegend: React.FC<MapLegendProps> = React.memo(({
   selectedLocation,
   layerType,
   currentFootprintThreshold,
@@ -201,4 +201,6 @@ export const MapLegend: React.FC<MapLegendProps> = ({
       <Typography variant="caption">Values below threshold are filtered out</Typography>
     </LegendContainer>
   );
-};
+});
+
+MapLegend.displayName = 'MapLegend';

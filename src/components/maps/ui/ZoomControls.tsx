@@ -73,7 +73,7 @@ const ZoomLevel = styled.div`
   font-family: ${typography.fontFamily};
 `;
 
-export const ZoomControls: React.FC<ZoomControlsProps> = ({ currentZoom, onZoomIn, onZoomOut }) => {
+export const ZoomControls: React.FC<ZoomControlsProps> = React.memo(({ currentZoom, onZoomIn, onZoomOut }) => {
   const handleZoomIn = (e: React.MouseEvent) => {
     e.stopPropagation();
     onZoomIn();
@@ -95,4 +95,6 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({ currentZoom, onZoomI
       </ZoomButton>
     </ZoomContainer>
   );
-};
+});
+
+ZoomControls.displayName = 'ZoomControls';

@@ -132,7 +132,7 @@ const inverseLogScale = (value: number) => Math.pow(10, value);
 const MIN_THRESHOLD = 1e-7;
 const MAX_THRESHOLD = 0.8;
 
-export const MapControls: React.FC<MapControlsProps> = ({
+export const MapControls: React.FC<MapControlsProps> = React.memo(({
   selectedLocation,
   layerType,
   setLayerType,
@@ -260,4 +260,6 @@ export const MapControls: React.FC<MapControlsProps> = ({
       </ControlPanel>
     </ControlsContainer>
   );
-};
+});
+
+MapControls.displayName = 'MapControls';
