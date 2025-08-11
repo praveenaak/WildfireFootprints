@@ -1,5 +1,4 @@
 import MultiLocationMapbox from './MultiLocationMapbox';
-import MultiLocationMapboxRefactored from './MultiLocationMapboxRefactored';
 import MultiLocationMapboxWithContext from './MultiLocationMapboxWithContext';
 import { MapControls } from './ui/MapControls';
 import { MapLegend } from './ui/MapLegend';
@@ -14,7 +13,6 @@ export * from './context/MapContext';
 
 export { 
   MultiLocationMapbox, 
-  MultiLocationMapboxRefactored,
   MultiLocationMapboxWithContext,
   MapControls, 
   MapLegend, 

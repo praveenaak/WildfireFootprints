@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { useMapActions, useMapState } from '../context/MapContext';
 import { parseCoordinates } from '../utils/mapUtils';
+import { mapboxRateLimiter, withRateLimit, handleRateLimitError } from '../../../utils/rateLimiter';
 
 interface MapInitializationProps {
   accessToken: string;
@@ -20,53 +21,83 @@ export const useMapInitializationWithContext = ({
   const { map } = useMapState();
   const { setMap, setZoom, setLocations, setLoading, setError } = useMapActions();
 
+  // Rate-limited map initialization
+  const initializeMapWithRateLimit = useCallback(
+    withRateLimit(async () => {
+      if (map || !mapContainer.current) return;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Check rate limit before making API calls
+        if (!mapboxRateLimiter.isAllowed('map-init')) {
+          throw new Error('Rate limit exceeded for map initialization');
+        }
+
+        mapboxgl.accessToken = accessToken;
+
+        const newMap = new mapboxgl.Map({
+          container: mapContainer.current,
+          style: 'mapbox://styles/pkulandh/cm9iyi6qq00jo01rce7xjcfay',
+          center: center,
+          zoom: zoom,
+          // Add security and performance settings
+          maxBounds: [[-180, -85], [180, 85]], // Restrict to world bounds
+          maxZoom: 18, // Limit zoom for performance
+          minZoom: 1,
+        });
+
+        newMap.on('load', () => {
+          console.log('Map loaded successfully');
+          setMap(newMap);
+          setLoading(false);
+          
+          // Load locations with rate limiting
+          try {
+            const locations = parseCoordinates();
+            setLocations(locations);
+          } catch (coordError) {
+            console.error('Failed to parse coordinates:', coordError);
+            setError('Failed to load location data');
+          }
+        });
+
+        newMap.on('zoom', () => {
+          const currentZoom = newMap.getZoom();
+          setZoom(currentZoom);
+        });
+
+        newMap.on('error', (error) => {
+          console.error('Map error:', error);
+          if (handleRateLimitError(error)) {
+            setError('Too many requests. Please wait before reloading.');
+          } else {
+            setError('Failed to load map');
+          }
+          setLoading(false);
+        });
+
+        newMap.on('style.load', () => {
+          console.log('Map style loaded');
+        });
+
+      } catch (error: any) {
+        console.error('Failed to initialize map:', error);
+        if (handleRateLimitError(error)) {
+          setError(`Rate limit exceeded: ${error.message}`);
+        } else {
+          setError('Failed to initialize map');
+        }
+        setLoading(false);
+      }
+    }, mapboxRateLimiter, 'map-init'),
+    [accessToken, center, zoom, map, setMap, setZoom, setLocations, setLoading, setError]
+  );
+
   const initializeMap = useCallback(() => {
-    if (map || !mapContainer.current) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      mapboxgl.accessToken = accessToken;
-
-      const newMap = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/pkulandh/cm9iyi6qq00jo01rce7xjcfay',
-        center: center,
-        zoom: zoom,
-      });
-
-      newMap.on('load', () => {
-        console.log('Map loaded successfully');
-        setMap(newMap);
-        setLoading(false);
-        
-        // Load locations
-        const locations = parseCoordinates();
-        setLocations(locations);
-      });
-
-      newMap.on('zoom', () => {
-        const currentZoom = newMap.getZoom();
-        setZoom(currentZoom);
-      });
-
-      newMap.on('error', (error) => {
-        console.error('Map error:', error);
-        setError('Failed to load map');
-        setLoading(false);
-      });
-
-      newMap.on('style.load', () => {
-        console.log('Map style loaded');
-      });
-
-    } catch (error) {
-      console.error('Failed to initialize map:', error);
-      setError('Failed to initialize map');
-      setLoading(false);
-    }
-  }, [accessToken, center, zoom, map, setMap, setZoom, setLocations, setLoading, setError]);
+    initializeMapWithRateLimit().catch(console.error);
+  }, [initializeMapWithRateLimit]);
 
   const cleanup = useCallback(() => {
     if (map) {

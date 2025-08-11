@@ -8,8 +8,17 @@ const getEnvVariable = (key: string): string => {
   return process.env[fullKey] as string;
 };
 
+// Secure token validation - no hardcoded fallbacks
+const getRequiredEnvVariable = (key: string): string => {
+  const value = getEnvVariable(key);
+  if (!value || value.trim() === '') {
+    throw new Error(`Required environment variable REACT_APP_${key} is not defined or empty`);
+  }
+  return value;
+};
+
 export const MAPBOX_CONFIG = {
-  accessToken: getEnvVariable('MAPBOX_TOKEN') || 'your_default_token_here',
+  accessToken: getRequiredEnvVariable('MAPBOX_TOKEN'),
   defaultCenter: [
     parseFloat(getEnvVariable('MAPBOX_CENTER_LNG') || '-115'),
     parseFloat(getEnvVariable('MAPBOX_CENTER_LAT') || '40'),

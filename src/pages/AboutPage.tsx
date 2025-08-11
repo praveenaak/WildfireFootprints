@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { colors, typography, spacing, borderRadius } from '../styles/theme';
+import { colors, spacing } from '../styles/theme';
 import Container from '../components/common/Container';
 import { Typography } from '../components/common/Typography';
 
@@ -8,9 +8,6 @@ const AboutContainer = styled.div`
   padding: ${spacing.lg} 0;
 `;
 
-const Section = styled.section`
-  margin-bottom: ${spacing.xl};
-`;
 
 const SectionTitle = styled(Typography)`
   position: relative;

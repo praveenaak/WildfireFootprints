@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
-import { colors, typography, spacing, shadows, borderRadius } from '../styles/theme';
+import { colors, spacing, shadows, borderRadius } from '../styles/theme';
 import Container from '../components/common/Container';
 import { Typography } from '../components/common/Typography';
 import { Button } from '../components/common/Button';

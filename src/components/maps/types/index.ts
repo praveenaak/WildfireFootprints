@@ -10,15 +10,6 @@ export interface Location {
   hasTimeSeriesData?: boolean;
 }
 
-export interface MapboxViewerProps {
-  accessToken?: string;
-  tilesetId: string;
-  center: [number, number];
-  zoom: number;
-  style?: React.CSSProperties;
-  minFootprintThreshold?: number;
-  minPm25Threshold?: number;
-}
 
 export interface MultiLocationMapboxProps {
   accessToken?: string;
