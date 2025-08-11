@@ -16,7 +16,7 @@ const SectionTitle = styled(Typography)`
   position: relative;
   padding-bottom: ${spacing.sm};
   margin-bottom: ${spacing.md};
-  
+
   &::after {
     content: '';
     position: absolute;

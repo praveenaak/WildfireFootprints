@@ -28,6 +28,7 @@ export interface MultiLocationMapboxProps {
   minFootprintThreshold?: number;
   minPm25Threshold?: number;
   timestamp?: string;
+  locations?: Location[];
 }
 
 export type LayerType = 'footprint' | 'pm25' | 'combined';
@@ -41,7 +42,7 @@ export interface LocationDataRanges {
   [key: string]: {
     footprint: DataRange;
     pm25: DataRange;
-  }
+  };
 }
 
 export interface MarkerRef {

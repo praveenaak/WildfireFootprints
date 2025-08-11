@@ -8,7 +8,7 @@ export const colors = {
   greatSaltLakeGreen: '#2d5954',
   bonnevilleSaltFlatsBlue: '#789ba8',
   rockyMountainRust: '#dd3b00',
-  
+
   // UI Colors
   backgroundPrimary: '#f9f6ef',
   backgroundSecondary: '#ffffff',
@@ -18,32 +18,32 @@ export const colors = {
   textTertiary: '#767676',
   borderPrimary: '#751d0c',
   borderSecondary: '#e0e0e0',
-  
+
   // Functional colors
   success: '#2d5954',
   warning: '#cea25d',
   error: '#dd3b00',
   info: '#789ba8',
-  
+
   // Footprint Scale
   footprintScale: [
     '#FFE6E0', // Lightest pink
-    '#FFCDC4', 
+    '#FFCDC4',
     '#F7A597',
     '#EE7D6A',
     '#D6553E',
     '#B32D16', // Darker mahogany
   ],
-  
+
   // PM2.5 Scale
   pm25Scale: [
-    '#c8f2d5',  // Very Good - darker green
-    '#73d13d',  // Good - darker vibrant green
-    '#faad14',  // Moderate - darker yellow/orange
-    '#ff7a45',  // Unhealthy for Sensitive - darker orange
-    '#f5222d',  // Unhealthy - vibrant red
-    '#a8071a'   // Very Unhealthy - deep red
-  ]
+    '#c8f2d5', // Very Good - darker green
+    '#73d13d', // Good - darker vibrant green
+    '#faad14', // Moderate - darker yellow/orange
+    '#ff7a45', // Unhealthy for Sensitive - darker orange
+    '#f5222d', // Unhealthy - vibrant red
+    '#a8071a', // Very Unhealthy - deep red
+  ],
 };
 
 export const typography = {
@@ -52,7 +52,7 @@ export const typography = {
     regular: 400,
     medium: 500,
     semiBold: 600,
-    bold: 700
+    bold: 700,
   },
   sizes: {
     h1: '36pt',
@@ -60,14 +60,14 @@ export const typography = {
     h3: '15pt',
     body: '9pt',
     small: '8pt',
-    button: '10pt'
+    button: '10pt',
   },
   lineHeights: {
     h1: 1.2,
     h2: 1.3,
     h3: 1.4,
-    body: 1.5
-  }
+    body: 1.5,
+  },
 };
 
 export const spacing = {
@@ -77,14 +77,14 @@ export const spacing = {
   md: '16px',
   lg: '24px',
   xl: '32px',
-  xxl: '48px'
+  xxl: '48px',
 };
 
 export const shadows = {
   sm: '0 1px 2px rgba(0, 0, 0, 0.05)',
   md: '0 4px 6px rgba(0, 0, 0, 0.1)',
   lg: '0 10px 15px rgba(0, 0, 0, 0.1)',
-  xl: '0 20px 25px rgba(0, 0, 0, 0.15)'
+  xl: '0 20px 25px rgba(0, 0, 0, 0.15)',
 };
 
 export const borderRadius = {
@@ -92,13 +92,13 @@ export const borderRadius = {
   md: '8px',
   lg: '12px',
   xl: '16px',
-  round: '50%'
+  round: '50%',
 };
 
 export const transitions = {
   fast: 'all 0.2s ease',
   medium: 'all 0.3s ease',
-  slow: 'all 0.5s ease'
+  slow: 'all 0.5s ease',
 };
 
 export const breakpoints = {
@@ -106,7 +106,7 @@ export const breakpoints = {
   sm: '576px',
   md: '768px',
   lg: '992px',
-  xl: '1200px'
+  xl: '1200px',
 };
 
 export const zIndices = {
@@ -115,5 +115,5 @@ export const zIndices = {
   mapOverlays: 20,
   popups: 30,
   modals: 40,
-  tooltips: 50
+  tooltips: 50,
 };

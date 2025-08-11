@@ -81,10 +81,11 @@ export const Typography: React.FC<TypographyProps> = ({
   color,
   align,
   children,
-  className
+  className,
 }) => {
-  const Component = variant === 'body' || variant === 'small' || variant === 'caption' ? 'p' : variant;
-  
+  const Component =
+    variant === 'body' || variant === 'small' || variant === 'caption' ? 'p' : variant;
+
   return (
     <StyledTypography
       as={Component}

@@ -15,4 +15,4 @@ export const resetIntroPreference = (): void => {
 
 if (typeof window !== 'undefined') {
   (window as any).resetIntro = resetIntroPreference;
-} 
+}

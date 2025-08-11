@@ -17,12 +17,12 @@ const Logo = styled.div`
   font-family: ${typography.fontFamily};
   font-weight: ${typography.fontWeights.bold};
   font-size: 22px;
-  
+
   a {
     text-decoration: none;
     color: ${colors.moabMahogany};
     transition: color 0.2s ease;
-    
+
     &:hover {
       color: ${colors.greatSaltLakeGreen};
     }
@@ -37,7 +37,7 @@ const Nav = styled.nav`
     margin: 0;
     padding: 0;
   }
-  
+
   li a {
     text-decoration: none;
     color: ${colors.olympicParkObsidian};
@@ -45,7 +45,7 @@ const Nav = styled.nav`
     transition: color 0.2s ease;
     font-family: ${typography.fontFamily};
     font-size: ${typography.sizes.body};
-    
+
     &:hover {
       color: ${colors.moabMahogany};
     }
@@ -58,12 +58,18 @@ const Header: React.FC = () => {
       <Logo>
         <Link to="/">Wildfire Footprint Visualizer</Link>
       </Logo>
-      
+
       <Nav>
         <ul>
-          <li><Link to="/home">Home</Link></li>
-          <li><Link to="/">Map</Link></li>
-          <li><Link to="/about">About</Link></li>
+          <li>
+            <Link to="/home">Home</Link>
+          </li>
+          <li>
+            <Link to="/">Map</Link>
+          </li>
+          <li>
+            <Link to="/about">About</Link>
+          </li>
         </ul>
       </Nav>
     </HeaderContainer>

@@ -17,12 +17,12 @@ const MapContainer = styled.div`
 const MapPage: React.FC = () => {
   return (
     <MapContainer className="map-page">
-      <MultiLocationMapbox 
+      <MultiLocationMapbox
         center={MAPBOX_CONFIG.defaultCenter}
         zoom={MAPBOX_CONFIG.defaultZoom}
         minFootprintThreshold={1e-5} // Initial threshold for footprint data (0.00001)
         minPm25Threshold={0} // Initial threshold for PM2.5 data - set to 0 to show all values
-        timestamp="08-25-2016 00:00" 
+        timestamp="08-25-2016 00:00"
       />
     </MapContainer>
   );

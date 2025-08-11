@@ -112,15 +112,22 @@ const IntroPage: React.FC<IntroPageProps> = ({ onComplete }) => {
                 <div className="h-1 w-20 bg-mahogany mb-6"></div>
 
                 <p className="text-xl text-forest-dark mb-4 font-redhat">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
                 </p>
 
                 <p className="text-xl text-forest-dark mb-4 font-redhat">
-                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
+                  fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
+                  culpa qui officia deserunt mollit anim id est laborum.
                 </p>
 
                 <p className="text-xl text-forest-dark mb-8 font-redhat">
-                  Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. This research is supported by the Wilkes Center for Climate Science and Policy.
+                  Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
+                  doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore
+                  veritatis et quasi architecto beatae vitae dicta sunt explicabo. This research is
+                  supported by the Wilkes Center for Climate Science and Policy.
                 </p>
               </div>
             </div>
@@ -192,7 +199,8 @@ const IntroPage: React.FC<IntroPageProps> = ({ onComplete }) => {
                   <Flame className="w-16 h-16 text-mahogany mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-forest mb-2">Demo Coming Soon</h3>
                   <p className="text-forest-dark font-redhat">
-                    An interactive demo of the wildfire footprint visualization tool will be available here.
+                    An interactive demo of the wildfire footprint visualization tool will be
+                    available here.
                   </p>
                 </div>
               </div>
@@ -204,4 +212,4 @@ const IntroPage: React.FC<IntroPageProps> = ({ onComplete }) => {
   );
 };
 
-export default IntroPage; 
+export default IntroPage;

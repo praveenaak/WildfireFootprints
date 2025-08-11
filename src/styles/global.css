@@ -31,14 +31,14 @@
 }
 
 .mapboxgl-canvas {
-  outline: none !important; 
+  outline: none !important;
 }
 
 /* Ensure zoom buttons work correctly */
-.mapboxgl-ctrl-zoom-in, 
+.mapboxgl-ctrl-zoom-in,
 .mapboxgl-ctrl-zoom-out,
-button[aria-label="Zoom in"],
-button[aria-label="Zoom out"] {
+button[aria-label='Zoom in'],
+button[aria-label='Zoom out'] {
   pointer-events: auto !important;
   cursor: pointer !important;
 }
@@ -51,7 +51,9 @@ body {
   background-color: var(--color-white);
 }
 
-h1, h2, h3 {
+h1,
+h2,
+h3 {
   font-family: var(--font-family);
   font-weight: 600;
   line-height: 1.2;
@@ -88,4 +90,4 @@ h3 {
     --font-size-h2: 18pt;
     --font-size-h3: 14pt;
   }
-} 
+}

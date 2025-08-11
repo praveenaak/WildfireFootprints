@@ -4,7 +4,14 @@ import { ArrowLeft, Play, Pause } from 'lucide-react';
 import { LayerType, Location } from '../types';
 import { formatDate } from '../utils/mapUtils';
 import { Button } from '../../common/Button';
-import { colors, typography, spacing, borderRadius, shadows, zIndices } from '../../../styles/theme';
+import {
+  colors,
+  typography,
+  spacing,
+  borderRadius,
+  shadows,
+  zIndices,
+} from '../../../styles/theme';
 import { Typography } from '../../common/Typography';
 
 interface MapControlsProps {
@@ -139,20 +146,23 @@ export const MapControls: React.FC<MapControlsProps> = ({
 }) => {
   // All locations now support time series data
   const isTimeSeriesLocation = !!selectedLocation;
-  
-  const handleSliderChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = inverseLogScale(parseFloat(event.target.value));
-    // Call adjustThreshold with increase/decrease based on whether the new value is higher/lower
-    if (newValue > currentFootprintThreshold) {
-      adjustThreshold('increase');
-    } else if (newValue < currentFootprintThreshold) {
-      adjustThreshold('decrease');
-    }
-  }, [currentFootprintThreshold, adjustThreshold]);
+
+  const handleSliderChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = inverseLogScale(parseFloat(event.target.value));
+      // Call adjustThreshold with increase/decrease based on whether the new value is higher/lower
+      if (newValue > currentFootprintThreshold) {
+        adjustThreshold('increase');
+      } else if (newValue < currentFootprintThreshold) {
+        adjustThreshold('decrease');
+      }
+    },
+    [currentFootprintThreshold, adjustThreshold]
+  );
 
   return (
     <ControlsContainer>
-      <Button 
+      <Button
         onClick={onBackClick}
         variant="secondary"
         fullWidth
@@ -164,7 +174,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
 
       <ControlPanel>
         <ButtonGroup>
-          <Button 
+          <Button
             onClick={() => setLayerType('footprint')}
             variant="secondary"
             fullWidth
@@ -172,7 +182,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
           >
             Footprint Data
           </Button>
-          <Button 
+          <Button
             onClick={() => setLayerType('pm25')}
             variant="secondary"
             fullWidth
@@ -180,7 +190,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
           >
             PM2.5 Data
           </Button>
-          <Button 
+          <Button
             onClick={() => setLayerType('combined')}
             variant="secondary"
             fullWidth

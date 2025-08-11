@@ -13,9 +13,9 @@ interface ErrorBoundaryState {
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { 
-      hasError: false, 
-      error: null 
+    this.state = {
+      hasError: false,
+      error: null,
     };
   }
 
@@ -24,7 +24,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error("Error caught by ErrorBoundary:", error, errorInfo);
+    console.error('Error caught by ErrorBoundary:', error, errorInfo);
   }
 
   render(): ReactNode {
@@ -36,4 +36,4 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 }
 
-export default ErrorBoundary; 
+export default ErrorBoundary;

@@ -1,7 +1,14 @@
 import React from 'react';
 import styled from 'styled-components';
 import { LayerType, Location } from '../types';
-import { colors, typography, spacing, borderRadius, shadows, zIndices } from '../../../styles/theme';
+import {
+  colors,
+  typography,
+  spacing,
+  borderRadius,
+  shadows,
+  zIndices,
+} from '../../../styles/theme';
 import { Typography } from '../../common/Typography';
 
 interface MapLegendProps {
@@ -92,18 +99,16 @@ const generateFootprintLegendItems = (min: number, max: number) => {
     colors.footprintScale[2],
     colors.footprintScale[3],
     colors.footprintScale[4],
-    colors.footprintScale[5]  // Darkest for highest values
+    colors.footprintScale[5], // Darkest for highest values
   ];
 
   // Only show a subset of the points to keep legend compact
   const displayIndices = [0, 3, 4, 5, 6, 7]; // Show 1e-7, 1e-3, 1e-2, 1e-1, 5e-1, 8e-1
-  
+
   return displayIndices.map(i => (
     <React.Fragment key={i}>
       <ColorBox color={legendColors[i]} />
-      <ValueLabel>
-        {values[i].toExponential(1)}
-      </ValueLabel>
+      <ValueLabel>{values[i].toExponential(1)}</ValueLabel>
     </React.Fragment>
   ));
 };
@@ -116,24 +121,33 @@ const generatePm25LegendItems = (min: number, max: number) => {
     Math.min(35, max * 0.35),
     Math.min(55, max * 0.55),
     Math.min(75, max * 0.75),
-    max
+    max,
   ];
-  
-  const labels = ['Very Good', 'Good', 'Moderate', 'Unhealthy for Sensitive', 'Unhealthy', 'Very Unhealthy'];
+
+  const labels = [
+    'Very Good',
+    'Good',
+    'Moderate',
+    'Unhealthy for Sensitive',
+    'Unhealthy',
+    'Very Unhealthy',
+  ];
   const legendColors = [
     colors.pm25Scale[0],
     colors.pm25Scale[1],
     colors.pm25Scale[2],
     colors.pm25Scale[3],
     colors.pm25Scale[4],
-    colors.pm25Scale[5]
+    colors.pm25Scale[5],
   ];
 
   return values.map((value, i) => (
     <React.Fragment key={i}>
       <ColorBox color={legendColors[i]} />
       <ValueLabel>
-        {i === values.length - 1 ? `${value.toFixed(1)}+` : `${value.toFixed(1)} - ${values[i + 1].toFixed(1)}`}
+        {i === values.length - 1
+          ? `${value.toFixed(1)}+`
+          : `${value.toFixed(1)} - ${values[i + 1].toFixed(1)}`}
         <CategoryLabel>{labels[i]}</CategoryLabel>
       </ValueLabel>
     </React.Fragment>
@@ -144,42 +158,37 @@ export const MapLegend: React.FC<MapLegendProps> = ({
   selectedLocation,
   layerType,
   currentFootprintThreshold,
-  currentPm25Threshold
+  currentPm25Threshold,
 }) => {
   if (!selectedLocation) return null;
 
   // Define ranges for each layer type
   const footprintRange = { min: Math.max(1e-7, currentFootprintThreshold), max: 0.8 };
   const pm25Range = { min: Math.max(0, currentPm25Threshold), max: 100 };
-  
+
   // For combined view, render two legends side by side
   if (layerType === 'combined') {
     return (
       <CombinedLegendContainer>
         <div>
-          <LegendTitle>
-            Footprint Scale
-          </LegendTitle>
+          <LegendTitle>Footprint Scale</LegendTitle>
           <LegendGrid>
             {generateFootprintLegendItems(footprintRange.min, footprintRange.max)}
           </LegendGrid>
         </div>
         <div>
-          <LegendTitle>
-            PM2.5 Scale (μg/m³)
-          </LegendTitle>
-          <LegendGrid>
-            {generatePm25LegendItems(pm25Range.min, pm25Range.max)}
-          </LegendGrid>
+          <LegendTitle>PM2.5 Scale (μg/m³)</LegendTitle>
+          <LegendGrid>{generatePm25LegendItems(pm25Range.min, pm25Range.max)}</LegendGrid>
         </div>
       </CombinedLegendContainer>
     );
   }
-  
+
   // Generate the appropriate legend items based on layer type
-  const legendItems = layerType === 'footprint'
-    ? generateFootprintLegendItems(footprintRange.min, footprintRange.max)
-    : generatePm25LegendItems(pm25Range.min, pm25Range.max);
+  const legendItems =
+    layerType === 'footprint'
+      ? generateFootprintLegendItems(footprintRange.min, footprintRange.max)
+      : generatePm25LegendItems(pm25Range.min, pm25Range.max);
 
   return (
     <LegendContainer>
@@ -187,13 +196,9 @@ export const MapLegend: React.FC<MapLegendProps> = ({
         {layerType === 'footprint' ? 'Footprint Scale' : 'PM2.5 Scale (μg/m³)'}
       </LegendTitle>
 
-      <LegendGrid>
-        {legendItems}
-      </LegendGrid>
-      
-      <Typography variant="caption">
-        Values below threshold are filtered out
-      </Typography>
+      <LegendGrid>{legendItems}</LegendGrid>
+
+      <Typography variant="caption">Values below threshold are filtered out</Typography>
     </LegendContainer>
   );
 };

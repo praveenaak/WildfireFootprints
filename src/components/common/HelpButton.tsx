@@ -19,17 +19,17 @@ const HelpButtonContainer = styled.button`
   cursor: pointer;
   transition: ${transitions.medium};
   z-index: 1000;
-  
+
   &:hover {
     background-color: ${colors.rockyMountainRust};
     transform: scale(1.1);
     box-shadow: ${shadows.xl};
   }
-  
+
   &:active {
     transform: scale(0.95);
   }
-  
+
   svg {
     color: white;
     width: 24px;
@@ -51,12 +51,12 @@ const Tooltip = styled.div`
   opacity: 0;
   visibility: hidden;
   transition: ${transitions.fast};
-  
+
   ${HelpButtonContainer}:hover & {
     opacity: 1;
     visibility: visible;
   }
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -80,4 +80,4 @@ const HelpButton: React.FC<HelpButtonProps> = ({ onClick }) => {
   );
 };
 
-export default HelpButton; 
+export default HelpButton;

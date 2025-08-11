@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-import { colors, typography, spacing } from '../../styles/theme';
+import { colors, spacing } from '../../styles/theme';
 import { Typography } from '../common/Typography';
 
 const FooterContainer = styled.footer`
@@ -19,10 +19,6 @@ const FooterLogoContainer = styled.div`
   margin: 0 auto ${spacing.md} auto;
 `;
 
-const FooterLogo = styled.img`
-  width: 100%;
-`;
-
 const CopyrightText = styled(Typography)`
   margin: 0;
   font-size: 11px;
@@ -34,12 +30,12 @@ const LinksContainer = styled.div`
   justify-content: center;
   gap: ${spacing.md};
   margin-bottom: ${spacing.md};
-  
+
   a {
     color: ${colors.moabMahogany};
     text-decoration: none;
     font-size: 12px;
-    
+
     &:hover {
       text-decoration: underline;
     }
@@ -48,22 +44,21 @@ const LinksContainer = styled.div`
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
-  
+
   return (
     <FooterContainer>
-      <FooterLogoContainer>
-      </FooterLogoContainer>
-      
+      <FooterLogoContainer></FooterLogoContainer>
+
       <LinksContainer>
-        <a href="#">Privacy Policy</a>
-        <a href="#">Terms of Use</a>
-        <a href="#">Contact Us</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Use</a>
+        <a href="/contact">Contact Us</a>
       </LinksContainer>
-      
+
       <CopyrightText variant="small">
         © {currentYear} Wildfire Footprint Visualizer. All rights reserved.
       </CopyrightText>
-      
+
       <CopyrightText variant="small">
         Developed by the Wilkes Center for Climate Science & Policy
       </CopyrightText>

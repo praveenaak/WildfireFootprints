@@ -13,24 +13,24 @@ export const routes: RouteObject[] = [
     children: [
       {
         index: true,
-        element: <MapPage />
+        element: <MapPage />,
       },
       {
         path: 'home',
-        element: <HomePage />
+        element: <HomePage />,
       },
       {
         path: 'map',
-        element: <MapPage />
+        element: <MapPage />,
       },
       {
         path: 'about',
-        element: <AboutPage />
-      }
-    ]
+        element: <AboutPage />,
+      },
+    ],
   },
   {
     path: '*',
-    element: <ErrorPage />
-  }
+    element: <ErrorPage />,
+  },
 ];

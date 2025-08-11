@@ -21,11 +21,13 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const animationRef = useRef<number | null>(null);
   const isPlayingRef = useRef(false);
-  const markersRef = useRef<{
-    marker: mapboxgl.Marker;
-    element: HTMLDivElement;
-    location: Location;
-  }[]>([]);
+  const markersRef = useRef<
+    {
+      marker: mapboxgl.Marker;
+      element: HTMLDivElement;
+      location: Location;
+    }[]
+  >([]);
 
   const handleLayerChange = (type: 'footprint' | 'pm25') => {
     setLayerType(type);
@@ -37,7 +39,7 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
           type === 'footprint' ? 'visible' : 'none'
         );
       }
-      
+
       if (mapRef.current.getLayer('pm25-layer')) {
         mapRef.current.setLayoutProperty(
           'pm25-layer',
@@ -50,22 +52,20 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
 
   const handleThresholdChange = (type: 'increase' | 'decrease') => {
     if (layerType === 'footprint') {
-      const newThreshold = type === 'increase' 
-        ? currentFootprintThreshold * 2
-        : currentFootprintThreshold / 2;
-      
+      const newThreshold =
+        type === 'increase' ? currentFootprintThreshold * 2 : currentFootprintThreshold / 2;
+
       setCurrentFootprintThreshold(newThreshold);
-      
+
       if (mapRef.current && mapRef.current.getLayer('footprint-layer')) {
         updateFootprintFilter(newThreshold);
       }
     } else {
-      const newThreshold = type === 'increase'
-        ? currentPm25Threshold * 2
-        : currentPm25Threshold / 2;
-      
+      const newThreshold =
+        type === 'increase' ? currentPm25Threshold * 2 : currentPm25Threshold / 2;
+
       setCurrentPm25Threshold(newThreshold);
-      
+
       if (mapRef.current && mapRef.current.getLayer('pm25-layer')) {
         updatePm25Filter(newThreshold);
       }
@@ -74,9 +74,9 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
 
   const updateFootprintFilter = (threshold: number) => {
     if (!mapRef.current || !selectedLocation) return;
-    
+
     const formattedDate = `${currentDate.substring(0, 4)}-${currentDate.substring(4, 6)}-${currentDate.substring(6, 8)}`;
-    
+
     let filter;
     if (selectedLocation.isTimeSeries) {
       if (selectedLocation.layerName === 'layer_type') {
@@ -84,27 +84,27 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
           'all',
           ['==', ['get', 'layer_type'], 'footprint'],
           ['>', ['get', 'value'], threshold],
-          ['==', ['get', 'date'], formattedDate]
+          ['==', ['get', 'date'], formattedDate],
         ];
       } else {
         filter = [
           'all',
           ['>', ['get', 'value'], threshold],
-          ['==', ['get', 'date'], formattedDate]
+          ['==', ['get', 'date'], formattedDate],
         ];
       }
     } else {
       filter = ['>', ['coalesce', ['get', 'footprint'], 0], threshold];
     }
-    
+
     mapRef.current.setFilter('footprint-layer', filter);
   };
 
   const updatePm25Filter = (threshold: number) => {
     if (!mapRef.current || !selectedLocation) return;
-    
+
     const formattedDate = `${currentDate.substring(0, 4)}-${currentDate.substring(4, 6)}-${currentDate.substring(6, 8)}`;
-    
+
     let filter;
     if (selectedLocation.isTimeSeries) {
       if (selectedLocation.layerName === 'layer_type') {
@@ -112,7 +112,7 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
           'all',
           ['==', ['get', 'layer_type'], 'convolved'],
           ['>', ['get', 'pm25_value'], threshold],
-          ['==', ['get', 'date'], formattedDate]
+          ['==', ['get', 'date'], formattedDate],
         ];
       } else {
         filter = ['>', ['get', 'pm25'], threshold];
@@ -120,7 +120,7 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
     } else {
       filter = ['>', ['get', 'pm25'], threshold];
     }
-    
+
     mapRef.current.setFilter('pm25-layer', filter);
   };
 
@@ -147,21 +147,21 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
       if (mapRef.current.getLayer('footprint-layer')) {
         mapRef.current.removeLayer('footprint-layer');
       }
-      
+
       if (mapRef.current.getLayer('pm25-layer')) {
         mapRef.current.removeLayer('pm25-layer');
       }
-      
+
       if (mapRef.current.getSource('footprint-data')) {
         mapRef.current.removeSource('footprint-data');
       }
-      
+
       mapRef.current.jumpTo({
         center: initialCenter,
-        zoom: initialZoom
+        zoom: initialZoom,
       });
     }
-    
+
     stopAnimation();
     setSelectedLocation(null);
   };
@@ -193,8 +193,8 @@ export const useMapData = (initialCenter: [number, number], initialZoom: number)
     mapRef,
     animationRef,
     isPlayingRef,
-    markersRef
+    markersRef,
   };
 };
 
-export default useMapData; 
+export default useMapData;

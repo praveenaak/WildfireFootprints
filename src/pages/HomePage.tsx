@@ -72,35 +72,27 @@ const HomePage: React.FC = () => {
         <HeroSection>
           <Title variant="h1">Wildfire Footprint Visualization Tool</Title>
           <Subtitle variant="body">
-            Explore the atmospheric impact of wildfires across the United States.
-            This interactive tool visualizes footprint data and air quality metrics.
+            Explore the atmospheric impact of wildfires across the United States. This interactive
+            tool visualizes footprint data and air quality metrics.
           </Subtitle>
-          
+
           <ButtonContainer>
-            <Button 
-              variant="primary" 
-              size="large"
-              icon={<MapIcon size={20} />}
-            >
+            <Button variant="primary" size="large" icon={<MapIcon size={20} />}>
               <Link to="/map" style={{ color: 'inherit', textDecoration: 'none' }}>
                 View Interactive Map
               </Link>
             </Button>
-            
-            <Button 
-              variant="secondary" 
-              size="large"
-              icon={<Info size={20} />}
-            >
+
+            <Button variant="secondary" size="large" icon={<Info size={20} />}>
               <Link to="/about" style={{ color: 'inherit', textDecoration: 'none' }}>
                 Learn More
               </Link>
             </Button>
           </ButtonContainer>
         </HeroSection>
-        
+
         <Typography variant="h2">Key Features</Typography>
-        
+
         <FeaturesContainer>
           <FeatureCard>
             <IconContainer>
@@ -108,30 +100,30 @@ const HomePage: React.FC = () => {
             </IconContainer>
             <Typography variant="h3">Interactive Visualization</Typography>
             <Typography variant="body">
-              Explore wildfire atmospheric footprints across multiple locations with
-              interactive controls and filters.
+              Explore wildfire atmospheric footprints across multiple locations with interactive
+              controls and filters.
             </Typography>
           </FeatureCard>
-          
+
           <FeatureCard>
             <IconContainer>
               <Info size={28} />
             </IconContainer>
             <Typography variant="h3">Air Quality Metrics</Typography>
             <Typography variant="body">
-              View PM2.5 concentrations and understand the relationship between
-              wildfires and air quality.
+              View PM2.5 concentrations and understand the relationship between wildfires and air
+              quality.
             </Typography>
           </FeatureCard>
-          
+
           <FeatureCard>
             <IconContainer>
               <Info size={28} />
             </IconContainer>
             <Typography variant="h3">Time Series Data</Typography>
             <Typography variant="body">
-              Select locations with time series data to animate changes in
-              wildfire impacts over time.
+              Select locations with time series data to animate changes in wildfire impacts over
+              time.
             </Typography>
           </FeatureCard>
         </FeaturesContainer>

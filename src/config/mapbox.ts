@@ -11,9 +11,9 @@ const getEnvVariable = (key: string): string => {
 export const MAPBOX_CONFIG = {
   accessToken: getEnvVariable('MAPBOX_TOKEN') || 'your_default_token_here',
   defaultCenter: [
-    parseFloat(getEnvVariable('MAPBOX_CENTER_LNG') || '-115'), 
-    parseFloat(getEnvVariable('MAPBOX_CENTER_LAT') || '40')
+    parseFloat(getEnvVariable('MAPBOX_CENTER_LNG') || '-115'),
+    parseFloat(getEnvVariable('MAPBOX_CENTER_LAT') || '40'),
   ] as [number, number],
   defaultZoom: parseFloat(getEnvVariable('MAPBOX_ZOOM') || '4.5'),
-  styleUrl: getEnvVariable('MAPBOX_STYLE') || 'mapbox://styles/pkulandh/cm9iyi6qq00jo01rce7xjcfay'
+  styleUrl: getEnvVariable('MAPBOX_STYLE') || 'mapbox://styles/pkulandh/cm9iyi6qq00jo01rce7xjcfay',
 };

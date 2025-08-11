@@ -1,7 +1,14 @@
 import React from 'react';
 import styled from 'styled-components';
 import { ChevronDown } from 'lucide-react';
-import { colors, spacing, borderRadius, shadows, zIndices, typography } from '../../../styles/theme';
+import {
+  colors,
+  spacing,
+  borderRadius,
+  shadows,
+  zIndices,
+  typography,
+} from '../../../styles/theme';
 
 interface DateSelectorProps {
   currentDate: string;
@@ -59,7 +66,7 @@ const StyledSelect = styled.select`
   color: ${colors.textPrimary};
   cursor: pointer;
   width: 100%;
-  
+
   &:focus {
     outline: none;
     border-color: ${colors.moabMahogany};
@@ -83,10 +90,10 @@ const DataAvailabilityNote = styled.div`
   margin-top: ${spacing.xs};
 `;
 
-export const DateSelector: React.FC<DateSelectorProps> = ({ 
+export const DateSelector: React.FC<DateSelectorProps> = ({
   currentDate,
   setCurrentDate,
-  isTimeSeriesLocation
+  isTimeSeriesLocation,
 }) => {
   if (!isTimeSeriesLocation) {
     return null;
@@ -98,22 +105,22 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
   const year = safeCurrentDate.substring(0, 4);
   const month = safeCurrentDate.substring(4, 6);
   const day = safeCurrentDate.substring(6, 8);
-  
+
   // Generate year options (2016-2020)
   const years = ['2016', '2017', '2018', '2019', '2020'];
-  
+
   // Generate month options (August, September, October)
   const months = [
     { value: '08', label: 'August' },
     { value: '09', label: 'September' },
-    { value: '10', label: 'October' }
+    { value: '10', label: 'October' },
   ];
-  
+
   // Generate day options based on selected month
   const getDaysForMonth = (monthVal: string) => {
     // Handle null/undefined month, defaulting to August (08)
     const monthValue = monthVal || '08';
-    
+
     if (monthValue === '10') {
       // Only show October 1st
       return [{ value: '01', label: '1' }];
@@ -131,18 +138,18 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       });
     }
   };
-  
+
   const days = getDaysForMonth(month);
-  
+
   // Handle selection changes
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newYear = e.target.value;
     setCurrentDate(`${newYear}${month}${day}`);
   };
-  
+
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newMonth = e.target.value;
-    
+
     // If changing to October, force day to 01
     let newDay = day;
     if (newMonth === '10') {
@@ -151,15 +158,15 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       // Adjust day if changing to September and day is 31
       newDay = '30';
     }
-    
+
     setCurrentDate(`${year}${newMonth}${newDay}`);
   };
-  
+
   const handleDayChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newDay = e.target.value;
     setCurrentDate(`${year}${month}${newDay}`);
   };
-  
+
   return (
     <SelectorContainer>
       <Title>Select Date</Title>
@@ -167,33 +174,39 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
         <SelectWrapper>
           <StyledSelect value={year} onChange={handleYearChange}>
             {years.map(y => (
-              <option key={y} value={y}>{y}</option>
+              <option key={y} value={y}>
+                {y}
+              </option>
             ))}
           </StyledSelect>
           <ChevronIcon>
             <ChevronDown size={16} />
           </ChevronIcon>
         </SelectWrapper>
-        
+
         <SelectWrapper>
           <StyledSelect value={month} onChange={handleMonthChange}>
             {months.map(m => (
-              <option key={m.value} value={m.value}>{m.label}</option>
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
             ))}
           </StyledSelect>
           <ChevronIcon>
             <ChevronDown size={16} />
           </ChevronIcon>
         </SelectWrapper>
-        
+
         <SelectWrapper>
-          <StyledSelect 
-            value={day} 
+          <StyledSelect
+            value={day}
             onChange={handleDayChange}
             disabled={month === '10'} // Disable day selection for October
           >
             {days.map(d => (
-              <option key={d.value} value={d.value}>{d.label}</option>
+              <option key={d.value} value={d.value}>
+                {d.label}
+              </option>
             ))}
           </StyledSelect>
           <ChevronIcon>
@@ -206,4 +219,4 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
       </DataAvailabilityNote>
     </SelectorContainer>
   );
-}; 
+};

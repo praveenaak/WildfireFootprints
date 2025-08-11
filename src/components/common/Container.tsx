@@ -16,15 +16,15 @@ const StyledContainer = styled.div<ContainerProps>`
   max-width: ${props => {
     switch (props.maxWidth) {
       case 'sm':
-        return '640px';
+        return breakpoints.sm;
       case 'md':
-        return '768px';
+        return breakpoints.md;
       case 'lg':
-        return '1024px';
+        return breakpoints.lg;
       case 'xl':
-        return '1280px';
+        return breakpoints.xl;
       default:
-        return '1024px';
+        return breakpoints.lg;
     }
   }};
 
@@ -33,11 +33,7 @@ const StyledContainer = styled.div<ContainerProps>`
   }
 `;
 
-export const Container: React.FC<ContainerProps> = ({
-  children,
-  maxWidth = 'lg',
-  className
-}) => {
+export const Container: React.FC<ContainerProps> = ({ children, maxWidth = 'lg', className }) => {
   return (
     <StyledContainer maxWidth={maxWidth} className={className}>
       {children}

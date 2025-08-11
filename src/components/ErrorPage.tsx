@@ -8,10 +8,11 @@ interface ErrorPageProps {
 const ErrorPage: React.FC<ErrorPageProps> = ({ error }) => {
   const navigate = useNavigate();
   const routeError = useRouteError();
-  
+
   const is404 = isRouteErrorResponse(routeError) && routeError.status === 404;
-  
-  const errorMessage = error?.message || 
+
+  const errorMessage =
+    error?.message ||
     (isRouteErrorResponse(routeError) ? routeError.statusText : 'An unexpected error occurred');
 
   const styles = {
@@ -49,19 +50,15 @@ const ErrorPage: React.FC<ErrorPageProps> = ({ error }) => {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.heading}>{is404 ? '404 - Page Not Found' : 'Oops! Something went wrong'}</h1>
+      <h1 style={styles.heading}>
+        {is404 ? '404 - Page Not Found' : 'Oops! Something went wrong'}
+      </h1>
       <p style={styles.message}>{errorMessage}</p>
       <div style={styles.actions}>
-        <button 
-          style={styles.button} 
-          onClick={() => navigate('/')}
-        >
+        <button style={styles.button} onClick={() => navigate('/')}>
           Return to Home
         </button>
-        <button 
-          style={styles.button} 
-          onClick={() => window.location.reload()}
-        >
+        <button style={styles.button} onClick={() => window.location.reload()}>
           Refresh Page
         </button>
       </div>
@@ -69,4 +66,4 @@ const ErrorPage: React.FC<ErrorPageProps> = ({ error }) => {
   );
 };
 
-export default ErrorPage; 
+export default ErrorPage;

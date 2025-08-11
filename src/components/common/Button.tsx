@@ -1,5 +1,5 @@
 import React from 'react';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { colors, typography, spacing, borderRadius, transitions } from '../../styles/theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'tertiary' | 'text';

@@ -1,6 +1,14 @@
 import React from 'react';
 import styled from 'styled-components';
-import { colors, typography, spacing, borderRadius, shadows, zIndices, transitions } from '../../../styles/theme';
+import {
+  colors,
+  typography,
+  spacing,
+  borderRadius,
+  shadows,
+  zIndices,
+  transitions,
+} from '../../../styles/theme';
 
 interface ZoomControlsProps {
   currentZoom: number;
@@ -65,38 +73,24 @@ const ZoomLevel = styled.div`
   font-family: ${typography.fontFamily};
 `;
 
-export const ZoomControls: React.FC<ZoomControlsProps> = ({
-  currentZoom,
-  onZoomIn,
-  onZoomOut
-}) => {
+export const ZoomControls: React.FC<ZoomControlsProps> = ({ currentZoom, onZoomIn, onZoomOut }) => {
   const handleZoomIn = (e: React.MouseEvent) => {
     e.stopPropagation();
     onZoomIn();
   };
-  
+
   const handleZoomOut = (e: React.MouseEvent) => {
     e.stopPropagation();
     onZoomOut();
   };
-  
+
   return (
     <ZoomContainer>
-      <ZoomButton 
-        onClick={handleZoomIn} 
-        aria-label="Zoom in"
-        type="button"
-      >
+      <ZoomButton onClick={handleZoomIn} aria-label="Zoom in" type="button">
         +
       </ZoomButton>
-      <ZoomLevel>
-        {currentZoom.toFixed(1)}
-      </ZoomLevel>
-      <ZoomButton 
-        onClick={handleZoomOut} 
-        aria-label="Zoom out"
-        type="button"
-      >
+      <ZoomLevel>{currentZoom.toFixed(1)}</ZoomLevel>
+      <ZoomButton onClick={handleZoomOut} aria-label="Zoom out" type="button">
         −
       </ZoomButton>
     </ZoomContainer>

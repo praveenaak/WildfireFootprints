@@ -1,5 +1,5 @@
 /* IntroPage.css */
-@import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Red+Hat+Display:wght@300;400;500;600;700&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Red+Hat+Display:wght@300;400;500;600;700&display=swap');
 
 /* Define theme colors as CSS custom properties */
 :root {
@@ -16,11 +16,11 @@
 
 /* Base font family utilities */
 .font-sora {
-  font-family: "Sora", sans-serif;
+  font-family: 'Sora', sans-serif;
 }
 
 .font-redhat {
-  font-family: "Red Hat Display", sans-serif;
+  font-family: 'Red Hat Display', sans-serif;
 }
 
 /* Background utilities */
@@ -454,11 +454,15 @@
 
 /* Shadow utilities */
 .shadow-lg {
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .shadow-md {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .shadow-sm {
@@ -577,4 +581,4 @@
 
 .h-\[90vh\] {
   height: 90vh;
-} 
+}

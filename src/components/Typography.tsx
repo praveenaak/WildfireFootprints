@@ -1,22 +1,22 @@
-import React from 'react'
-import styled, { css } from 'styled-components'
-import { colors, typography } from '../styles/theme'
+import React from 'react';
+import styled, { css } from 'styled-components';
+import { colors, typography } from '../styles/theme';
 
-type TypographyVariant = 'h1' | 'h2' | 'h3' | 'body' | 'small' | 'caption'
-type TextAlign = 'left' | 'center' | 'right'
-type FontWeight = 'regular' | 'medium' | 'semiBold' | 'bold'
-type Color = 'primary' | 'secondary' | 'tertiary' | 'accent' | 'white'
+type TypographyVariant = 'h1' | 'h2' | 'h3' | 'body' | 'small' | 'caption';
+type TextAlign = 'left' | 'center' | 'right';
+type FontWeight = 'regular' | 'medium' | 'semiBold' | 'bold';
+type Color = 'primary' | 'secondary' | 'tertiary' | 'accent' | 'white';
 
 interface TypographyProps {
-  variant?: TypographyVariant
-  align?: TextAlign
-  weight?: FontWeight
-  color?: Color
-  gutterBottom?: boolean
-  truncate?: boolean
-  as?: React.ElementType
-  className?: string
-  children: React.ReactNode
+  variant?: TypographyVariant;
+  align?: TextAlign;
+  weight?: FontWeight;
+  color?: Color;
+  gutterBottom?: boolean;
+  truncate?: boolean;
+  as?: React.ElementType;
+  className?: string;
+  children: React.ReactNode;
 }
 
 const variantStyles = {
@@ -51,7 +51,7 @@ const variantStyles = {
     font-weight: ${typography.fontWeights.medium};
     letter-spacing: 0.02em;
   `,
-}
+};
 
 const colorStyles = {
   primary: css`
@@ -69,7 +69,7 @@ const colorStyles = {
   white: css`
     color: ${colors.snowbirdWhite};
   `,
-}
+};
 
 const weightStyles = {
   regular: css`
@@ -84,15 +84,15 @@ const weightStyles = {
   bold: css`
     font-weight: ${typography.fontWeights.bold};
   `,
-}
+};
 
 const TextElement = styled.span<{
-  $variant: TypographyVariant
-  $align: TextAlign
-  $weight: FontWeight
-  $color: Color
-  $gutterBottom: boolean
-  $truncate: boolean
+  $variant: TypographyVariant;
+  $align: TextAlign;
+  $weight: FontWeight;
+  $color: Color;
+  $gutterBottom: boolean;
+  $truncate: boolean;
 }>`
   font-family: ${typography.fontFamily};
   margin: 0;
@@ -101,14 +101,16 @@ const TextElement = styled.span<{
   ${props => weightStyles[props.$weight]};
   text-align: ${props => props.$align};
   margin-bottom: ${props => (props.$gutterBottom ? '0.5em' : '0')};
-  
-  ${props => props.$truncate && css`
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
-  `}
-`
+
+  ${props =>
+    props.$truncate &&
+    css`
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    `}
+`;
 
 const defaultComponentMap: Record<TypographyVariant, React.ElementType> = {
   h1: 'h1',
@@ -117,7 +119,7 @@ const defaultComponentMap: Record<TypographyVariant, React.ElementType> = {
   body: 'p',
   small: 'span',
   caption: 'span',
-}
+};
 
 export const Typography: React.FC<TypographyProps> = ({
   variant = 'body',
@@ -130,12 +132,10 @@ export const Typography: React.FC<TypographyProps> = ({
   className,
   children,
 }) => {
-  const finalWeight = weight || (
-    variant.startsWith('h') ? 'semiBold' : 'regular'
-  )
-  
-  const component = as || defaultComponentMap[variant]
-  
+  const finalWeight = weight || (variant.startsWith('h') ? 'semiBold' : 'regular');
+
+  const component = as || defaultComponentMap[variant];
+
   return (
     <TextElement
       as={component}
@@ -149,7 +149,7 @@ export const Typography: React.FC<TypographyProps> = ({
     >
       {children}
     </TextElement>
-  )
-}
+  );
+};
 
-export default Typography 
+export default Typography;

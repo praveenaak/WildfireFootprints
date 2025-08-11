@@ -1,8 +1,17 @@
 import React from 'react';
 import styled from 'styled-components';
-import { ChevronDown, Calendar, MapPin } from 'lucide-react';
+import { ChevronDown, MapPin } from 'lucide-react';
 import { Location } from '../types';
-import { colors, typography, spacing, borderRadius, shadows, zIndices, transitions } from '../../../styles/theme';
+import {
+  colors,
+  typography,
+  spacing,
+  borderRadius,
+  shadows,
+  zIndices,
+  transitions,
+} from '../../../styles/theme';
+import { MAP_CONSTANTS } from '../../../constants/mapConstants';
 import { Typography } from '../../common/Typography';
 
 interface MapHeaderProps {
@@ -15,7 +24,7 @@ interface MapHeaderProps {
 // Styled components with design
 const HeaderContainer = styled.div`
   position: absolute;
-  top: ${spacing.lg}; 
+  top: ${spacing.lg};
   left: ${spacing.lg};
   transform: none;
   z-index: ${zIndices.mapOverlays};
@@ -41,7 +50,7 @@ const HeaderPanel = styled.div`
   backdrop-filter: blur(4px);
   transition: ${transitions.medium};
   width: 100%;
-  
+
   &:hover {
     box-shadow: ${shadows.lg};
   }
@@ -56,7 +65,7 @@ const LocationName = styled(Typography)`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -106,7 +115,7 @@ const DateSelectorRow = styled.div`
 const SelectWrapper = styled.div<{ isEditable: boolean }>`
   position: relative;
   min-width: 80px;
-  opacity: ${props => props.isEditable ? 1 : 0.85};
+  opacity: ${props => (props.isEditable ? 1 : 0.85)};
 `;
 
 const StyledSelect = styled.select`
@@ -124,17 +133,17 @@ const StyledSelect = styled.select`
   width: 100%;
   text-align: center;
   transition: ${transitions.fast};
-  
+
   &:focus {
     outline: none;
     border-color: ${colors.moabMahogany};
     box-shadow: 0 0 0 2px ${colors.moabMahogany}20;
   }
-  
+
   &:hover {
     border-color: ${colors.canyonlandsTan};
   }
-  
+
   &:disabled {
     cursor: default;
     opacity: 0.7;
@@ -161,7 +170,7 @@ const ChevronIcon = styled.div<{ isEditable: boolean }>`
   transform: translateY(-50%);
   pointer-events: none;
   color: ${colors.textSecondary};
-  opacity: ${props => props.isEditable ? 1 : 0};
+  opacity: ${props => (props.isEditable ? 1 : 0)};
   transition: ${transitions.fast};
 `;
 
@@ -184,13 +193,19 @@ const AnimationBadge = styled.div`
   justify-content: center;
   font-size: 12px;
   border: 1px solid ${colors.moabMahogany}40;
-  
+
   @keyframes pulse {
-    0% { opacity: 0.7; }
-    50% { opacity: 1; }
-    100% { opacity: 0.7; }
+    0% {
+      opacity: 0.7;
+    }
+    50% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0.7;
+    }
   }
-  
+
   animation: pulse 2s infinite ease-in-out;
 `;
 
@@ -204,62 +219,54 @@ const RecordingDot = styled.span`
   animation: pulseDot 1.5s infinite;
 
   @keyframes pulseDot {
-    0% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.8); }
-    100% { opacity: 1; transform: scale(1); }
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.4;
+      transform: scale(0.8);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 `;
 
 // Helper function to get month name
 const getMonthName = (monthNum: string): string => {
-  const months: Record<string, string> = {
-    '01': 'January',
-    '02': 'February',
-    '03': 'March',
-    '04': 'April',
-    '05': 'May',
-    '06': 'June',
-    '07': 'July',
-    '08': 'August',
-    '09': 'September',
-    '10': 'October',
-    '11': 'November',
-    '12': 'December'
-  };
-  return months[monthNum] || monthNum;
+  return (
+    MAP_CONSTANTS.MONTHS.NAMES[monthNum as keyof typeof MAP_CONSTANTS.MONTHS.NAMES] || monthNum
+  );
 };
 
 export const MapHeader: React.FC<MapHeaderProps> = ({
   selectedLocation,
   isPlaying,
   currentDate,
-  setCurrentDate
+  setCurrentDate,
 }) => {
   // All locations now support time series data
   const isTimeSeriesLocation = true;
 
   // Parse the current date for selectors, defaulting to August 1, 2016 if undefined
-  const defaultDate = '20160801';
-  const safeCurrentDate = currentDate || defaultDate;
+  const safeCurrentDate = currentDate || MAP_CONSTANTS.DATE_RANGES.DEFAULT_DATE;
   const year = safeCurrentDate.substring(0, 4);
   const month = safeCurrentDate.substring(4, 6);
   const day = safeCurrentDate.substring(6, 8);
-  
+
   // Generate year options (2016-2020)
-  const years = ['2016', '2017', '2018', '2019', '2020'];
-  
+  const years = MAP_CONSTANTS.YEARS;
+
   // Generate month options (August, September, October)
-  const months = [
-    { value: '08', label: 'August' },
-    { value: '09', label: 'September' },
-    { value: '10', label: 'October' }
-  ];
-  
+  const months = MAP_CONSTANTS.MONTHS.AVAILABLE;
+
   // Generate day options based on selected month
   const getDaysForMonth = (monthValue: string | undefined) => {
     // Handle null/undefined month, defaulting to August (08)
     const month = monthValue || '08';
-    
+
     if (month === '10') {
       // Only show October 1st
       return [{ value: '01', label: '1' }];
@@ -277,9 +284,9 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
       });
     }
   };
-  
+
   const days = getDaysForMonth(month);
-  
+
   // Handle selection changes
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!setCurrentDate) return;
@@ -289,15 +296,15 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
     const currentDay = day || '01';
     setCurrentDate(`${newYear}${currentMonth}${currentDay}`);
   };
-  
+
   const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!setCurrentDate) return;
     const newMonth = e.target.value;
-    
+
     // Guard against null/undefined values
     const currentYear = year || '2016';
     let newDay = day || '01';
-    
+
     // If changing to October, force day to 01
     if (newMonth === '10') {
       newDay = '01';
@@ -305,10 +312,10 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
       // Adjust day if changing to September and day is 31
       newDay = '30';
     }
-    
+
     setCurrentDate(`${currentYear}${newMonth}${newDay}`);
   };
-  
+
   const handleDayChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     if (!setCurrentDate) return;
     const newDay = e.target.value;
@@ -330,7 +337,7 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
               <LocationIcon size={18} />
               {selectedLocation.name}
             </LocationName>
-            
+
             {isTimeSeriesLocation && (
               <DateContainer>
                 <DateSelectorRow>
@@ -339,7 +346,9 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
                       <>
                         <StyledSelect value={month} onChange={handleMonthChange}>
                           {months.map(m => (
-                            <option key={m.value} value={m.value}>{m.label}</option>
+                            <option key={m.value} value={m.value}>
+                              {m.label}
+                            </option>
                           ))}
                         </StyledSelect>
                         <ChevronIcon isEditable={true}>
@@ -347,22 +356,22 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
                         </ChevronIcon>
                       </>
                     ) : (
-                      <ReadOnlySelect>
-                        {getMonthName(month)}
-                      </ReadOnlySelect>
+                      <ReadOnlySelect>{getMonthName(month)}</ReadOnlySelect>
                     )}
                   </SelectWrapper>
-                  
+
                   <SelectWrapper isEditable={isEditable}>
                     {isEditable ? (
                       <>
-                        <StyledSelect 
-                          value={day} 
+                        <StyledSelect
+                          value={day}
                           onChange={handleDayChange}
-                          disabled={month === '10'} 
+                          disabled={month === '10'}
                         >
                           {days.map(d => (
-                            <option key={d.value} value={d.value}>{d.label}</option>
+                            <option key={d.value} value={d.value}>
+                              {d.label}
+                            </option>
                           ))}
                         </StyledSelect>
                         <ChevronIcon isEditable={month !== '10'}>
@@ -370,20 +379,20 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
                         </ChevronIcon>
                       </>
                     ) : (
-                      <ReadOnlySelect>
-                        {parseInt(day)}
-                      </ReadOnlySelect>
+                      <ReadOnlySelect>{parseInt(day)}</ReadOnlySelect>
                     )}
                   </SelectWrapper>
-                  
+
                   <Separator>,</Separator>
-                  
+
                   <SelectWrapper isEditable={isEditable}>
                     {isEditable ? (
                       <>
                         <StyledSelect value={year} onChange={handleYearChange}>
                           {years.map(y => (
-                            <option key={y} value={y}>{y}</option>
+                            <option key={y} value={y}>
+                              {y}
+                            </option>
                           ))}
                         </StyledSelect>
                         <ChevronIcon isEditable={true}>
@@ -391,9 +400,7 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
                         </ChevronIcon>
                       </>
                     ) : (
-                      <ReadOnlySelect>
-                        {year}
-                      </ReadOnlySelect>
+                      <ReadOnlySelect>{year}</ReadOnlySelect>
                     )}
                   </SelectWrapper>
                 </DateSelectorRow>
