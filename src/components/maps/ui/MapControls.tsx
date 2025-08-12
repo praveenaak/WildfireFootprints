@@ -2,7 +2,6 @@ import React from 'react';
 import styled from 'styled-components';
 import { ArrowLeft, Play, Pause } from 'lucide-react';
 import { LayerType, Location } from '../types';
-import { formatDate } from '../utils/mapUtils';
 import { Button } from '../../common/Button';
 import {
   colors,
@@ -30,7 +29,7 @@ interface MapControlsProps {
 // Styled components
 const ControlsContainer = styled.div`
   position: absolute;
-  top: 180px;
+  top: ${spacing.lg};
   left: ${spacing.lg};
   z-index: ${zIndices.mapControls};
   max-width: 320px;
@@ -87,41 +86,26 @@ const SliderLabels = styled.div`
   color: ${colors.textSecondary};
 `;
 
-const DateDisplay = styled.div`
-  padding: ${spacing.sm};
-  background-color: ${colors.backgroundTertiary};
-  border-radius: ${borderRadius.md};
-  border: 2px solid ${colors.borderSecondary};
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: ${spacing.sm};
-`;
-
-const RecordingDot = styled.span`
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background-color: ${colors.rockyMountainRust};
-  border-radius: ${borderRadius.round};
-  margin-left: ${spacing.xs};
-  animation: pulse 1.5s infinite;
-
-  @keyframes pulse {
-    0% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.4;
-    }
-    100% {
-      opacity: 1;
-    }
-  }
-`;
 
 const AdditionalInfoText = styled(Typography)`
   margin-top: ${spacing.sm};
+`;
+
+const BackButton = styled(Button)`
+  background-color: ${colors.moabMahogany};
+  color: ${colors.snowbirdWhite};
+  border: 2px solid ${colors.snowbirdWhite} !important;
+  
+  &:hover {
+    background-color: ${colors.greatSaltLakeGreen};
+    border: 2px solid ${colors.snowbirdWhite} !important;
+  }
+  
+  &:active {
+    background-color: ${colors.greatSaltLakeGreen};
+    border: 2px solid ${colors.snowbirdWhite} !important;
+    transform: translateY(1px);
+  }
 `;
 
 // Convert threshold to log scale for slider
@@ -162,15 +146,15 @@ export const MapControls: React.FC<MapControlsProps> = React.memo(({
 
   return (
     <ControlsContainer>
-      <Button
+      <BackButton
         onClick={onBackClick}
-        variant="secondary"
+        variant="primary"
         fullWidth
         icon={<ArrowLeft size={18} />}
         iconPosition="left"
       >
         Back to All Locations
-      </Button>
+      </BackButton>
 
       <ControlPanel>
         <ButtonGroup>
@@ -235,27 +219,16 @@ export const MapControls: React.FC<MapControlsProps> = React.memo(({
         </ThresholdContainer>
 
         {isTimeSeriesLocation && (
-          <>
-            <DateDisplay>
-              <Typography variant="body" color={colors.textPrimary}>
-                Current Date:
-              </Typography>
-              <Typography variant="body">
-                {formatDate(currentDate)}
-                {isPlaying && <RecordingDot />}
-              </Typography>
-            </DateDisplay>
-            <Button
-              onClick={() => {
-                toggleAnimation();
-              }}
-              variant="secondary"
-              fullWidth
-              icon={isPlaying ? <Pause size={16} /> : <Play size={16} />}
-            >
-              {isPlaying ? 'Pause Animation' : 'Play Animation'}
-            </Button>
-          </>
+          <Button
+            onClick={() => {
+              toggleAnimation();
+            }}
+            variant="primary"
+            fullWidth
+            icon={isPlaying ? <Pause size={16} /> : <Play size={16} />}
+          >
+            {isPlaying ? 'Pause Animation' : 'Play Animation'}
+          </Button>
         )}
       </ControlPanel>
     </ControlsContainer>

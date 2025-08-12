@@ -25,20 +25,20 @@ interface MapHeaderProps {
 const HeaderContainer = styled.div`
   position: absolute;
   top: ${spacing.lg};
-  left: ${spacing.lg};
-  transform: none;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: ${zIndices.mapOverlays};
   font-family: ${typography.fontFamily};
   color: ${colors.textPrimary};
-  max-width: 320px;
-  width: 320px;
+  max-width: 450px;
+  width: 450px;
   display: flex;
   flex-direction: column;
 `;
 
 const HeaderPanel = styled.div`
   padding: ${spacing.md};
-  background-color: ${colors.snowbirdWhite};
+  background-color: rgba(249, 246, 239, 0.6);
   border-radius: ${borderRadius.lg};
   display: flex;
   flex-direction: column;
@@ -47,12 +47,13 @@ const HeaderPanel = styled.div`
   color: ${colors.textPrimary};
   text-align: center;
   box-shadow: ${shadows.md};
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
   transition: ${transitions.medium};
   width: 100%;
 
   &:hover {
     box-shadow: ${shadows.lg};
+    background-color: rgba(249, 246, 239, 0.75);
   }
 `;
 
@@ -106,10 +107,12 @@ const DateSelectorRow = styled.div`
   align-items: center;
   justify-content: center;
   gap: ${spacing.sm};
-  padding: ${spacing.xs} ${spacing.sm};
-  background-color: rgba(255, 255, 255, 0.6);
-  border-radius: ${borderRadius.md};
-  border: 1px solid ${colors.borderSecondary};
+  padding: ${spacing.sm} ${spacing.md};
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: ${borderRadius.lg};
+  border: 2px solid ${colors.moabMahogany};
+  box-shadow: ${shadows.sm};
+  backdrop-filter: blur(4px);
 `;
 
 const SelectWrapper = styled.div<{ isEditable: boolean }>`
@@ -120,119 +123,75 @@ const SelectWrapper = styled.div<{ isEditable: boolean }>`
 
 const StyledSelect = styled.select`
   appearance: none;
-  background-color: ${colors.backgroundTertiary};
-  border: 1px solid ${colors.borderSecondary};
+  background-color: ${colors.snowbirdWhite};
+  border: 1px solid ${colors.moabMahogany}40;
   border-radius: ${borderRadius.md};
-  padding: ${spacing.xs} ${spacing.sm};
-  padding-right: ${spacing.lg};
+  padding: ${spacing.sm} ${spacing.md};
+  padding-right: ${spacing.xl};
   font-family: ${typography.fontFamily};
   font-size: ${typography.sizes.body};
-  font-weight: ${typography.fontWeights.medium};
-  color: ${colors.textPrimary};
+  font-weight: ${typography.fontWeights.semiBold};
+  color: ${colors.moabMahogany};
   cursor: pointer;
   width: 100%;
   text-align: center;
-  transition: ${transitions.fast};
+  transition: ${transitions.medium};
+  box-shadow: 0 2px 4px rgba(117, 29, 12, 0.1);
 
   &:focus {
     outline: none;
     border-color: ${colors.moabMahogany};
-    box-shadow: 0 0 0 2px ${colors.moabMahogany}20;
+    box-shadow: 0 0 0 3px ${colors.moabMahogany}30, 0 2px 8px rgba(117, 29, 12, 0.2);
+    background-color: ${colors.snowbirdWhite};
   }
 
   &:hover {
-    border-color: ${colors.canyonlandsTan};
+    border-color: ${colors.moabMahogany}60;
+    box-shadow: 0 2px 8px rgba(117, 29, 12, 0.15);
+    background-color: ${colors.snowbirdWhite};
   }
 
   &:disabled {
     cursor: default;
-    opacity: 0.7;
+    opacity: 0.6;
+    background-color: ${colors.backgroundTertiary};
   }
 `;
 
 const ReadOnlySelect = styled.div`
-  background-color: ${colors.backgroundTertiary};
-  border: 1px solid ${colors.borderSecondary};
+  background-color: ${colors.snowbirdWhite};
+  border: 1px solid ${colors.moabMahogany}40;
   border-radius: ${borderRadius.md};
-  padding: ${spacing.xs} ${spacing.sm};
+  padding: ${spacing.sm} ${spacing.md};
   font-family: ${typography.fontFamily};
   font-size: ${typography.sizes.body};
-  font-weight: ${typography.fontWeights.medium};
-  color: ${colors.textPrimary};
+  font-weight: ${typography.fontWeights.semiBold};
+  color: ${colors.moabMahogany};
   width: 100%;
   text-align: center;
+  box-shadow: 0 2px 4px rgba(117, 29, 12, 0.1);
+  opacity: 0.8;
 `;
 
 const ChevronIcon = styled.div<{ isEditable: boolean }>`
   position: absolute;
-  right: ${spacing.sm};
+  right: ${spacing.md};
   top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
-  color: ${colors.textSecondary};
-  opacity: ${props => (props.isEditable ? 1 : 0)};
-  transition: ${transitions.fast};
+  color: ${colors.moabMahogany};
+  opacity: ${props => (props.isEditable ? 0.7 : 0)};
+  transition: ${transitions.medium};
 `;
 
 const Separator = styled.div`
   font-size: ${typography.sizes.h3};
-  font-weight: ${typography.fontWeights.medium};
-  color: ${colors.textPrimary};
-  margin: 0 -4px;
-`;
-
-const AnimationBadge = styled.div`
-  margin-top: ${spacing.md};
-  padding: ${spacing.xs} ${spacing.md};
-  background-color: ${colors.moabMahogany}20;
+  font-weight: ${typography.fontWeights.semiBold};
   color: ${colors.moabMahogany};
-  font-weight: ${typography.fontWeights.medium};
-  border-radius: 100px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  border: 1px solid ${colors.moabMahogany}40;
-
-  @keyframes pulse {
-    0% {
-      opacity: 0.7;
-    }
-    50% {
-      opacity: 1;
-    }
-    100% {
-      opacity: 0.7;
-    }
-  }
-
-  animation: pulse 2s infinite ease-in-out;
+  margin: 0 -2px;
+  opacity: 0.8;
 `;
 
-const RecordingDot = styled.span`
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  background-color: ${colors.rockyMountainRust};
-  border-radius: ${borderRadius.round};
-  margin-right: ${spacing.xs};
-  animation: pulseDot 1.5s infinite;
-
-  @keyframes pulseDot {
-    0% {
-      opacity: 1;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.4;
-      transform: scale(0.8);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
-`;
 
 // Helper function to get month name
 const getMonthName = (monthNum: string): string => {
@@ -404,11 +363,6 @@ export const MapHeader: React.FC<MapHeaderProps> = ({
                     )}
                   </SelectWrapper>
                 </DateSelectorRow>
-                {isPlaying && (
-                  <AnimationBadge>
-                    <RecordingDot /> Animation in progress
-                  </AnimationBadge>
-                )}
               </DateContainer>
             )}
           </>

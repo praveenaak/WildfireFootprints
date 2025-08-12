@@ -21,7 +21,6 @@ import { MapHeader } from './ui/MapHeader';
 import { ZoomControls } from './ui/ZoomControls';
 import { Location, LayerType, MarkerRef, MultiLocationMapboxProps } from './types';
 import { colors } from '../../styles/theme';
-import { Play, Pause } from 'lucide-react';
 import styled from 'styled-components';
 import { 
   getMarkerConfig, 
@@ -41,45 +40,7 @@ const getFootprintFilter = (dateString: string, threshold: number): any[] => {
   return filter;
 };
 
-const AnimationButton = styled.div`
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  border: 3px solid white;
-  z-index: 10000;
-  transition:
-    transform 0.2s ease,
-    background-color 0.2s ease;
 
-  &:hover {
-    transform: scale(1.1);
-  }
-`;
-
-const PauseButton = styled(AnimationButton)`
-  background-color: #b32d16;
-
-  &:hover {
-    background-color: #8b2010;
-  }
-`;
-
-const PlayButton = styled(AnimationButton)`
-  background-color: #2d7638;
-
-  &:hover {
-    background-color: #1f5828;
-  }
-`;
 
 const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   accessToken = MAPBOX_CONFIG.accessToken,
@@ -398,7 +359,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         });
 
         const onMarkerClick = () => {
-          handleLocationSelect(location);
+          // Only allow selection if no marker is currently selected
+          if (!selectedLocation) {
+            handleLocationSelect(location);
+          }
         };
 
         el.addEventListener('click', (e: Event) => {
@@ -407,15 +371,15 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           onMarkerClick();
         });
 
-        // Add hover effects for unselected markers
+        // Add hover effects only when no marker is selected
         el.addEventListener('mouseenter', () => {
-          if (selectedLocation && (selectedLocation.lng !== location.lng || selectedLocation.lat !== location.lat)) {
+          if (!selectedLocation) {
             el.style.transform = 'scale(1.1)';
           }
         });
 
         el.addEventListener('mouseleave', () => {
-          if (selectedLocation && (selectedLocation.lng !== location.lng || selectedLocation.lat !== location.lat)) {
+          if (!selectedLocation) {
             el.style.transform = 'scale(1)';
           }
         });
@@ -747,7 +711,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           source: 'footprint-data',
           'source-layer': sourceLayerName,
           paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 13, 5, 18, 8, 22, 12, 18],
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 8, 5, 12, 8, 16, 12, 14],
             'circle-color': [
               'interpolate',
               ['linear'],
@@ -834,7 +798,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             if (item.location.lat === location.lat && item.location.lng === location.lng) {
               return { ...item, marker: newMarker, element: el };
             }
-            // Unselected markers are already transparent with edge color only
+            // Disable click interaction for other markers when one is selected
+            item.element.style.cursor = 'default';
+            item.element.style.pointerEvents = 'none';
             return item;
           });
         }
@@ -876,7 +842,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           if (item.location.lat === location.lat && item.location.lng === location.lng) {
             return { ...item, marker: newMarker, element: el };
           }
-          // All markers are visible when no selection
+          // Re-enable click interaction for all markers when no selection
+          item.element.style.cursor = 'pointer';
+          item.element.style.pointerEvents = 'auto';
           return item;
         });
       });
@@ -919,17 +887,6 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         currentPm25Threshold={currentPm25Threshold}
       />
 
-      {isPlaying ? (
-        <PauseButton onClick={handlePauseButtonClick}>
-          <Pause size={32} strokeWidth={3} />
-        </PauseButton>
-      ) : (
-        selectedLocation && (
-          <PlayButton onClick={handlePauseButtonClick}>
-            <Play size={32} strokeWidth={3} />
-          </PlayButton>
-        )
-      )}
     </div>
   );
 };

@@ -65,6 +65,12 @@ export const useMapAnimation = ({
     function actuallyStartAnimation() {
       isPlayingRef.current = true;
 
+      // Center the map on selected location at zoom 4 when animation starts
+      if (map.current && selectedLocation) {
+        map.current.setCenter([selectedLocation.lng, selectedLocation.lat]);
+        map.current.setZoom(4);
+      }
+
       // All locations use the same date range now
       const START_DATE = MAP_CONSTANTS.DATE_RANGES.START_DATE;
       const END_DATE = MAP_CONSTANTS.DATE_RANGES.END_DATE;
@@ -204,6 +210,12 @@ export const useMapAnimation = ({
         }
 
         addTimestampIndicator();
+
+        // Keep viewport centered on selected location during animation
+        if (map.current && selectedLocation) {
+          map.current.setCenter([selectedLocation.lng, selectedLocation.lat]);
+          map.current.setZoom(4);
+        }
 
         if (isPlayingRef.current) {
           window.setTimeout(() => {
