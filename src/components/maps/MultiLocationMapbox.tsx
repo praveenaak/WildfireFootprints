@@ -160,7 +160,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       if (map.current) {
         map.current.flyTo({
           center: [location.lng, location.lat],
-          zoom: 7,
+          zoom: 4,
           essential: true,
           speed: 1.8,
           curve: 1,
