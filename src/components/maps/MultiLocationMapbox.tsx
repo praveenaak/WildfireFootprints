@@ -596,7 +596,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
               source: 'pm25-data',
               'source-layer': pm25SourceLayer,
               paint: {
-                'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 13, 5, 18, 8, 22, 12, 18],
+                'circle-radius': ['interpolate', ['linear'], ['zoom'], 3, 8, 5, 12, 8, 16, 12, 14],
                 'circle-color': [
                   'interpolate',
                   ['linear'],

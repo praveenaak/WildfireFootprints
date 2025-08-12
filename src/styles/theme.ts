@@ -35,14 +35,14 @@ export const colors = {
     '#B32D16', // Darker mahogany
   ],
 
-  // PM2.5 Scale
+  // PM2.5 Scale - Brighter colors
   pm25Scale: [
-    '#c8f2d5', // Very Good - darker green
-    '#73d13d', // Good - darker vibrant green
-    '#faad14', // Moderate - darker yellow/orange
-    '#ff7a45', // Unhealthy for Sensitive - darker orange
-    '#f5222d', // Unhealthy - vibrant red
-    '#a8071a', // Very Unhealthy - deep red
+    '#4ade80', // Very Good - brighter green
+    '#22d3ee', // Good - brighter cyan/turquoise
+    '#fbbf24', // Moderate - brighter yellow
+    '#fb923c', // Unhealthy for Sensitive - brighter orange
+    '#ef4444', // Unhealthy - brighter red
+    '#dc2626', // Very Unhealthy - brighter deep red
   ],
 };
 
