@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Github, Info, MapPin, MessageSquare, Play, X, Flame } from 'lucide-react';
+import { Info, MapPin, MessageSquare, Play, X, Flame } from 'lucide-react';
 import './IntroPage.css';
 
 interface IntroPageProps {
@@ -131,7 +131,7 @@ const IntroPage: React.FC<IntroPageProps> = ({ onComplete }) => {
 
               <div className="bg-white rounded-xl p-6 shadow-sm">
                 <div className="flex items-center mb-4">
-                  <Github className="w-6 h-6 text-forest mr-3" />
+                  <MessageSquare className="w-6 h-6 text-forest mr-3" />
                   <h4 className="font-medium text-xl text-forest">GitHub Issues</h4>
                 </div>
 

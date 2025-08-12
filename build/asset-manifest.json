@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/WildfireFootprints/static/css/main.0b387482.css",
+    "main.js": "/WildfireFootprints/static/js/main.fad0118b.js",
+    "static/js/453.70fbde96.chunk.js": "/WildfireFootprints/static/js/453.70fbde96.chunk.js",
+    "index.html": "/WildfireFootprints/index.html",
+    "static/media/wildfire-icon.svg": "/WildfireFootprints/static/media/wildfire-icon.dbfd1f7969d4fedb39c81b0598706440.svg",
+    "main.0b387482.css.map": "/WildfireFootprints/static/css/main.0b387482.css.map",
+    "main.fad0118b.js.map": "/WildfireFootprints/static/js/main.fad0118b.js.map",
+    "453.70fbde96.chunk.js.map": "/WildfireFootprints/static/js/453.70fbde96.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.0b387482.css",
+    "static/js/main.fad0118b.js"
+  ]
+}

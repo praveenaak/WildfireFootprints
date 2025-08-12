@@ -21,7 +21,7 @@ import { MapHeader } from './ui/MapHeader';
 import { ZoomControls } from './ui/ZoomControls';
 import { Location, LayerType, MarkerRef, MultiLocationMapboxProps } from './types';
 import { colors } from '../../styles/theme';
-import styled, { createGlobalStyle } from 'styled-components';
+import { createGlobalStyle } from 'styled-components';
 import { 
   getMarkerConfig, 
   applyMarkerBaseStyles, 
@@ -102,13 +102,6 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   });
 
 
-  const handlePauseButtonClick = useCallback(() => {
-    toggleAnimation();
-
-    if (map.current) {
-      map.current.triggerRepaint();
-    }
-  }, [isPlaying, toggleAnimation, map]);
 
   const handleLocationSelect = useCallback(
     (location: Location) => {
@@ -421,6 +414,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         map.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken, center, zoom]);
 
   useEffect(() => {
@@ -795,7 +789,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     if (!markersRef.current.length) return;
 
     if (selectedLocation) {
-      markersRef.current.forEach(({ marker, element, location }) => {
+      markersRef.current.forEach(({ marker, location }) => {
         if (location.lat === selectedLocation.lat && location.lng === selectedLocation.lng) {
           marker.remove();
 
@@ -828,7 +822,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         }
       });
     } else {
-      markersRef.current.forEach(({ marker, element, location }) => {
+      markersRef.current.forEach(({ marker, location }) => {
         marker.remove();
 
         const el = document.createElement('div');
@@ -914,4 +908,4 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   );
 };
 
-export default MultiLocationMapbox;
+export default React.memo(MultiLocationMapbox);
