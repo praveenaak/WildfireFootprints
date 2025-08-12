@@ -65,10 +65,25 @@ export const useMapAnimation = ({
     function actuallyStartAnimation() {
       isPlayingRef.current = true;
 
-      // Center the map on selected location at zoom 4 when animation starts
+      // Smoothly center the map on selected location at zoom 4 when animation starts
       if (map.current && selectedLocation) {
-        map.current.setCenter([selectedLocation.lng, selectedLocation.lat]);
-        map.current.setZoom(4);
+        const currentCenter = map.current.getCenter();
+        const currentZoom = map.current.getZoom();
+        
+        // Only fly to location if significantly different from current position
+        const distance = Math.sqrt(
+          Math.pow(currentCenter.lng - selectedLocation.lng, 2) + 
+          Math.pow(currentCenter.lat - selectedLocation.lat, 2)
+        );
+        
+        if (distance > 0.1 || Math.abs(currentZoom - 4) > 0.5) {
+          map.current.flyTo({
+            center: [selectedLocation.lng, selectedLocation.lat],
+            zoom: 4,
+            duration: 1000,
+            essential: true
+          });
+        }
       }
 
       // All locations use the same date range now
@@ -211,10 +226,24 @@ export const useMapAnimation = ({
 
         addTimestampIndicator();
 
-        // Keep viewport centered on selected location during animation
+        // Gently maintain viewport centered on selected location during animation
         if (map.current && selectedLocation) {
-          map.current.setCenter([selectedLocation.lng, selectedLocation.lat]);
-          map.current.setZoom(4);
+          const currentCenter = map.current.getCenter();
+          const currentZoom = map.current.getZoom();
+          
+          // Only adjust if the map has drifted significantly
+          const distance = Math.sqrt(
+            Math.pow(currentCenter.lng - selectedLocation.lng, 2) + 
+            Math.pow(currentCenter.lat - selectedLocation.lat, 2)
+          );
+          
+          if (distance > 0.2 || Math.abs(currentZoom - 4) > 1) {
+            map.current.easeTo({
+              center: [selectedLocation.lng, selectedLocation.lat],
+              zoom: 4,
+              duration: 300
+            });
+          }
         }
 
         if (isPlayingRef.current) {
