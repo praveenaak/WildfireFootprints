@@ -23,6 +23,11 @@ import { Location, LayerType, MarkerRef, MultiLocationMapboxProps } from './type
 import { colors } from '../../styles/theme';
 import { Play, Pause } from 'lucide-react';
 import styled from 'styled-components';
+import { 
+  getMarkerConfig, 
+  applyMarkerBaseStyles, 
+  applyMarkerConfig 
+} from './config/markerConfig';
 
 const getFootprintFilter = (dateString: string, threshold: number): any[] => {
   const formattedDate = formatDateForFilter(dateString);
@@ -371,15 +376,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         const el = document.createElement('div');
         el.className = 'location-marker';
         el.setAttribute('data-location-name', location.name);
-        el.style.width = '25px';
-        el.style.height = '41px';
-        el.style.backgroundSize = 'cover';
-        el.style.cursor = 'pointer';
-        el.style.pointerEvents = 'auto';
-        el.style.zIndex = '10';
-        el.style.transition = 'none';
-
-        el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
+        
+        // Apply base styles and unselected marker configuration
+        applyMarkerBaseStyles(el);
+        applyMarkerConfig(el, getMarkerConfig(false));
 
         const marker = new mapboxgl.Marker({
           element: el,
@@ -405,6 +405,19 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           e.preventDefault();
           e.stopPropagation();
           onMarkerClick();
+        });
+
+        // Add hover effects for unselected markers
+        el.addEventListener('mouseenter', () => {
+          if (selectedLocation && (selectedLocation.lng !== location.lng || selectedLocation.lat !== location.lat)) {
+            el.style.transform = 'scale(1.1)';
+          }
+        });
+
+        el.addEventListener('mouseleave', () => {
+          if (selectedLocation && (selectedLocation.lng !== location.lng || selectedLocation.lat !== location.lat)) {
+            el.style.transform = 'scale(1)';
+          }
         });
 
         marker.getElement().addEventListener('click', onMarkerClick);
@@ -803,11 +816,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           const el = document.createElement('div');
           el.className = 'location-marker location-marker-selected';
           el.setAttribute('data-location-name', location.name);
-          el.style.width = '25px';
-          el.style.height = '41px';
-          el.style.backgroundSize = 'cover';
-          el.style.cursor = 'pointer';
-          el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23cea25d%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
+          
+          // Apply base styles and selected marker configuration
+          applyMarkerBaseStyles(el);
+          applyMarkerConfig(el, getMarkerConfig(true));
 
           const newMarker = new mapboxgl.Marker({
             element: el,
@@ -822,7 +834,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
             if (item.location.lat === location.lat && item.location.lng === location.lng) {
               return { ...item, marker: newMarker, element: el };
             }
-            item.marker.remove(); // Hide all other markers
+            // Unselected markers are already transparent with edge color only
             return item;
           });
         }
@@ -834,12 +846,10 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         const el = document.createElement('div');
         el.className = 'location-marker';
         el.setAttribute('data-location-name', location.name);
-        el.style.width = '25px';
-        el.style.height = '41px';
-        el.style.backgroundSize = 'cover';
-        el.style.cursor = 'pointer';
-
-        el.style.backgroundImage = `url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2225%22%20height%3D%2241%22%3E%3Cpath%20fill%3D%22%23${colors.moabMahogany.substring(1)}%22%20d%3D%22M12.5%200C5.596%200%200%205.596%200%2012.5c0%203.662%203.735%2011.08%208.302%2019.271.44.788.859%201.536%201.26%202.263C10.714%2036.357%2011.496%2038%2012.5%2038c1.004%200%201.786-1.643%202.938-3.966.401-.727.82-1.475%201.26-2.263C21.265%2023.58%2025%2016.162%2025%2012.5%2025%205.596%2019.404%200%2012.5%200zm0%2018a5.5%205.5%200%20110-11%205.5%205.5%200%20010%2011z%22%2F%3E%3C%2Fsvg%3E')`;
+        
+        // Apply base styles and unselected marker configuration
+        applyMarkerBaseStyles(el);
+        applyMarkerConfig(el, getMarkerConfig(false));
 
         const newMarker = new mapboxgl.Marker({
           element: el,
@@ -866,15 +876,13 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
           if (item.location.lat === location.lat && item.location.lng === location.lng) {
             return { ...item, marker: newMarker, element: el };
           }
+          // All markers are visible when no selection
           return item;
         });
       });
     }
   }, [
     selectedLocation,
-    colors.canyonlandsTan,
-    colors.moabMahogany,
-    colors.bonnevilleSaltFlatsBlue,
     handleLocationSelect,
   ]);
 

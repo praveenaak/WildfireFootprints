@@ -1,6 +1,8 @@
 import React, { useEffect, useCallback, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { MarkerRef } from '../types';
+import { MAP_CONSTANTS } from '../../../constants/mapConstants';
+import { colors } from '../../../styles/theme';
 import { 
   useMapInstance, 
   useMapState, 
@@ -24,13 +26,13 @@ export const MapMarkerManagerWithContext: React.FC = React.memo(() => {
     markersRef.current = [];
   }, []);
 
-  const createMarkerElement = useCallback((location: any, isSelected: boolean) => {
+  const createMarkerElement = useCallback((location: any, isSelected: boolean, hasSelection: boolean) => {
     const el = document.createElement('div');
     el.className = isSelected ? 'location-marker location-marker-selected' : 'location-marker';
     el.style.width = '20px';
     el.style.height = '20px';
     el.style.borderRadius = '50%';
-    el.style.backgroundColor = isSelected ? '#B32D16' : '#751d0c';
+    el.style.backgroundColor = isSelected ? colors.moabMahogany : colors.canyonlandsTan;
     el.style.border = '3px solid white';
     el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
     el.style.cursor = 'pointer';
@@ -58,9 +60,11 @@ export const MapMarkerManagerWithContext: React.FC = React.memo(() => {
 
     clearMarkers();
 
+    const hasSelection = selectedLocation !== null;
+
     locations.forEach(location => {
       const isSelected = selectedLocation?.lng === location.lng && selectedLocation?.lat === location.lat;
-      const el = createMarkerElement(location, isSelected);
+      const el = createMarkerElement(location, isSelected, hasSelection);
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([location.lng, location.lat])
@@ -71,6 +75,8 @@ export const MapMarkerManagerWithContext: React.FC = React.memo(() => {
   }, [map, locations, selectedLocation, clearMarkers, createMarkerElement]);
 
   const updateMarkerStyles = useCallback(() => {
+    const hasSelection = selectedLocation !== null;
+    
     markersRef.current.forEach(markerRef => {
       const isSelected = selectedLocation?.lng === markerRef.location.lng && 
                         selectedLocation?.lat === markerRef.location.lat;
@@ -78,7 +84,7 @@ export const MapMarkerManagerWithContext: React.FC = React.memo(() => {
       if (markerRef.marker) {
         const element = markerRef.marker.getElement();
         element.className = isSelected ? 'location-marker location-marker-selected' : 'location-marker';
-        element.style.backgroundColor = isSelected ? '#B32D16' : '#751d0c';
+        element.style.backgroundColor = isSelected ? colors.moabMahogany : colors.canyonlandsTan;
         element.style.transform = isSelected ? 'scale(1.2)' : 'scale(1)';
       }
     });

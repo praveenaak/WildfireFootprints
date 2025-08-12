@@ -2,6 +2,7 @@ import { useCallback, useRef, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { Location, MarkerRef } from '../types';
 import { MAP_CONSTANTS, PERFORMANCE_CONSTANTS } from '../../../constants/mapConstants';
+import { colors } from '../../../styles/theme';
 import { useMapCleanup } from './useMapCleanup';
 
 interface UseMapMarkersProps {
@@ -27,20 +28,19 @@ export const useMapMarkers = ({
     markersRef.current = [];
   }, []);
 
-  const createMarkerElement = useCallback((location: Location, isSelected: boolean) => {
+  const createMarkerElement = useCallback((location: Location, isSelected: boolean, hasSelection: boolean) => {
     const el = document.createElement('div');
     el.className = 'custom-marker';
     el.style.cssText = `
       width: ${isSelected ? '20px' : '16px'};
       height: ${isSelected ? '20px' : '16px'};
-      background-color: ${isSelected ? MAP_CONSTANTS.COLORS.MARKER_ACTIVE : MAP_CONSTANTS.COLORS.MARKER_INACTIVE};
+      background-color: ${isSelected ? colors.moabMahogany : colors.canyonlandsTan};
       border: 2px solid white;
       border-radius: 50%;
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(0,0,0,0.3);
       transition: all 0.2s ease;
     `;
-
     el.addEventListener('mouseenter', () => {
       el.style.transform = 'scale(1.2)';
     });
@@ -60,11 +60,12 @@ export const useMapMarkers = ({
 
     // Limit markers for performance
     const limitedLocations = locations.slice(0, PERFORMANCE_CONSTANTS.MAX_MARKERS);
+    const hasSelection = selectedLocation !== null;
 
     limitedLocations.forEach(location => {
       const isSelected =
         selectedLocation?.lng === location.lng && selectedLocation?.lat === location.lat;
-      const el = createMarkerElement(location, isSelected);
+      const el = createMarkerElement(location, isSelected, hasSelection);
 
       const marker = new mapboxgl.Marker(el)
         .setLngLat([location.lng, location.lat])
@@ -84,6 +85,8 @@ export const useMapMarkers = ({
   }, [map, locations, selectedLocation, onLocationSelect, createMarkerElement, clearMarkers]);
 
   const updateMarkerStyles = useCallback(() => {
+    const hasSelection = selectedLocation !== null;
+    
     markersRef.current.forEach(({ marker, location, element }) => {
       const isSelected =
         selectedLocation?.lng === location.lng && selectedLocation?.lat === location.lat;
@@ -91,8 +94,8 @@ export const useMapMarkers = ({
       element.style.width = isSelected ? '20px' : '16px';
       element.style.height = isSelected ? '20px' : '16px';
       element.style.backgroundColor = isSelected
-        ? MAP_CONSTANTS.COLORS.MARKER_ACTIVE
-        : MAP_CONSTANTS.COLORS.MARKER_INACTIVE;
+        ? colors.moabMahogany
+        : colors.canyonlandsTan;
     });
   }, [selectedLocation]);
 

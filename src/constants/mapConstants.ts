@@ -37,6 +37,7 @@ export const MAP_CONSTANTS = {
   COLORS: {
     MARKER_ACTIVE: '#751d0c',
     MARKER_INACTIVE: '#99aa88',
+    MARKER_LIGHT_MAROON: '#C85450', // Light maroon for unselected markers
     FOOTPRINT_LOW: 'rgba(117, 29, 12, 0.3)',
     FOOTPRINT_HIGH: 'rgba(117, 29, 12, 0.8)',
   },

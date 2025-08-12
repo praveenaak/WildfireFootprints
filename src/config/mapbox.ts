@@ -23,6 +23,6 @@ export const MAPBOX_CONFIG = {
     parseFloat(getEnvVariable('MAPBOX_CENTER_LNG') || '-115'),
     parseFloat(getEnvVariable('MAPBOX_CENTER_LAT') || '40'),
   ] as [number, number],
-  defaultZoom: parseFloat(getEnvVariable('MAPBOX_ZOOM') || '4.5'),
+  defaultZoom: parseFloat(getEnvVariable('MAPBOX_ZOOM') || '4'),
   styleUrl: getEnvVariable('MAPBOX_STYLE') || 'mapbox://styles/pkulandh/cm9iyi6qq00jo01rce7xjcfay',
 };
