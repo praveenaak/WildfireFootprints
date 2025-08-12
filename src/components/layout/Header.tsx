@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import styled from 'styled-components';
 import { colors, typography, spacing, shadows } from '../../styles/theme';
+import WildfireIcon from '../../assets/wildfire-icon.svg';
 
 const HeaderContainer = styled.header`
   padding: ${spacing.md} ${spacing.lg};
@@ -17,16 +18,28 @@ const Logo = styled.div`
   font-family: ${typography.fontFamily};
   font-weight: ${typography.fontWeights.bold};
   font-size: 22px;
+  display: flex;
+  align-items: center;
+  gap: ${spacing.sm};
 
   a {
     text-decoration: none;
     color: ${colors.moabMahogany};
     transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: ${spacing.sm};
 
     &:hover {
       color: ${colors.greatSaltLakeGreen};
     }
   }
+`;
+
+const IconContainer = styled.img`
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
 `;
 
 const Nav = styled.nav`
@@ -56,7 +69,10 @@ const Header: React.FC = () => {
   return (
     <HeaderContainer>
       <Logo>
-        <Link to="/">Wildfire Footprint Visualizer</Link>
+        <Link to="/">
+          <IconContainer src={WildfireIcon} alt="Wildfire Icon" />
+          Wildfire Footprint Visualizer
+        </Link>
       </Logo>
 
       <Nav>

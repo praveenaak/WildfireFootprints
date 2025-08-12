@@ -39,11 +39,13 @@ export const MARKER_CONFIGS = {
  * Common marker element styles
  */
 export const MARKER_BASE_STYLES = {
-  backgroundSize: 'cover',
+  backgroundSize: 'contain',
+  backgroundRepeat: 'no-repeat',
+  backgroundPosition: 'center bottom',
   cursor: 'pointer',
   pointerEvents: 'auto',
   zIndex: '10',
-  transition: 'none',
+  transition: 'filter 0.2s ease',
 } as const;
 
 /**

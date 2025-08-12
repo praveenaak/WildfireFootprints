@@ -21,12 +21,19 @@ import { MapHeader } from './ui/MapHeader';
 import { ZoomControls } from './ui/ZoomControls';
 import { Location, LayerType, MarkerRef, MultiLocationMapboxProps } from './types';
 import { colors } from '../../styles/theme';
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
 import { 
   getMarkerConfig, 
   applyMarkerBaseStyles, 
   applyMarkerConfig 
 } from './config/markerConfig';
+
+const MarkerStyles = createGlobalStyle`
+  .location-marker.marker-hover {
+    filter: brightness(1.2);
+    z-index: 20;
+  }
+`;
 
 const getFootprintFilter = (dateString: string, threshold: number): any[] => {
   const formattedDate = formatDateForFilter(dateString);
@@ -55,6 +62,8 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<MarkerRef[]>([]);
   const toggleAnimationRef = useRef<() => void>(() => {});
+  const handleLocationSelectRef = useRef<((location: Location) => void) | null>(null);
+  const selectedLocationRef = useRef<Location | null>(null);
 
   const [layerType, setLayerType] = useState<LayerType>('footprint');
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
@@ -92,9 +101,6 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     addTimestampIndicator,
   });
 
-  useEffect(() => {
-    toggleAnimationRef.current = toggleAnimation;
-  }, [toggleAnimation]);
 
   const handlePauseButtonClick = useCallback(() => {
     toggleAnimation();
@@ -131,6 +137,12 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     },
     [isPlaying, selectedLocation]
   );
+
+  useEffect(() => {
+    toggleAnimationRef.current = toggleAnimation;
+    handleLocationSelectRef.current = handleLocationSelect;
+    selectedLocationRef.current = selectedLocation;
+  }, [toggleAnimation, handleLocationSelect, selectedLocation]);
 
   const handleZoomIn = useCallback(() => {
     if (map.current) {
@@ -331,9 +343,13 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
     map.current.on('load', () => {
       if (!map.current) return;
 
-      markersRef.current = [];
+      // Small delay to ensure map is fully rendered
+      setTimeout(() => {
+        if (!map.current) return;
+        
+        markersRef.current = [];
 
-      locations.forEach(location => {
+        locations.forEach(location => {
         const el = document.createElement('div');
         el.className = 'location-marker';
         el.setAttribute('data-location-name', location.name);
@@ -341,6 +357,11 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         // Apply base styles and unselected marker configuration
         applyMarkerBaseStyles(el);
         applyMarkerConfig(el, getMarkerConfig(false));
+        
+        // Ensure marker is visible and clickable
+        el.style.display = 'block';
+        el.style.visibility = 'visible';
+        el.style.opacity = '1';
 
         const marker = new mapboxgl.Marker({
           element: el,
@@ -359,9 +380,9 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         });
 
         const onMarkerClick = () => {
-          // Only allow selection if no marker is currently selected
-          if (!selectedLocation) {
-            handleLocationSelect(location);
+          // Allow selection when no marker is selected OR clicking on a different marker
+          if (handleLocationSelectRef.current) {
+            handleLocationSelectRef.current(location);
           }
         };
 
@@ -373,14 +394,14 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
 
         // Add hover effects only when no marker is selected
         el.addEventListener('mouseenter', () => {
-          if (!selectedLocation) {
-            el.style.transform = 'scale(1.1)';
+          if (!selectedLocationRef.current) {
+            el.classList.add('marker-hover');
           }
         });
 
         el.addEventListener('mouseleave', () => {
-          if (!selectedLocation) {
-            el.style.transform = 'scale(1)';
+          if (!selectedLocationRef.current) {
+            el.classList.remove('marker-hover');
           }
         });
 
@@ -391,6 +412,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
       });
 
       addTimestampIndicator();
+        }, 100); // Small delay to ensure proper marker setup
     });
 
     return () => {
@@ -399,7 +421,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
         map.current = null;
       }
     };
-  }, [accessToken, center, zoom, handleLocationSelect]);
+  }, [accessToken, center, zoom]);
 
   useEffect(() => {
     addTimestampIndicator();
@@ -856,6 +878,7 @@ const MultiLocationMapbox: React.FC<MultiLocationMapboxProps> = ({
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <MarkerStyles />
       <div ref={mapContainer} style={style} />
 
       <MapHeader

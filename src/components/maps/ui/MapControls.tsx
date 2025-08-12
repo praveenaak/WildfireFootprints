@@ -144,6 +144,11 @@ export const MapControls: React.FC<MapControlsProps> = React.memo(({
     [currentFootprintThreshold, adjustThreshold]
   );
 
+  // Only render controls when a location is selected
+  if (!selectedLocation) {
+    return null;
+  }
+
   return (
     <ControlsContainer>
       <BackButton

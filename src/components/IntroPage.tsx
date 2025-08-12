@@ -30,21 +30,14 @@ const IntroPage: React.FC<IntroPageProps> = ({ onComplete }) => {
       <div className="flex-1 w-full p-8 flex flex-col max-h-screen overflow-auto">
         {/* Header with title and tabs */}
         <header className="mb-8">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="w-16 h-16 flex items-center justify-center">
-              <img
-                src={`${process.env.PUBLIC_URL}/logo192.png`}
-                alt="Wildfire Footprints Tool Logo"
-                className="w-full h-full object-contain rounded-md"
-              />
-            </div>
+          <div className="flex items-center justify-center gap-4 mb-8">
             <h1 className="text-5xl font-bold text-obsidian">
-              <span className="text-mahogany">Wildfire</span> Footprint Visualization Tool
+              <span className="text-mahogany">Wildfire</span> Footprints Visualization Tool
             </h1>
           </div>
 
           {/* Enter Map and Demo Buttons */}
-          <div className="flex justify-center gap-4 mb-8">
+          <div className="flex justify-center gap-4 mb-12">
             <button
               onClick={onComplete}
               className="bg-mahogany hover:bg-mahogany/90 text-white font-bold text-lg py-3 px-10 rounded-xl transition-all transform hover:scale-105 shadow-lg flex items-center justify-center"
@@ -103,38 +96,36 @@ const IntroPage: React.FC<IntroPageProps> = ({ onComplete }) => {
         </header>
 
         {/* Content container */}
-        <div className="flex-1 mb-8">
+        <div className="flex-1 mb-8 flex justify-center">
           {activeSection === 'about' && (
-            <div className="flex justify-center">
+            <div className="max-w-4xl w-full">
               {/* About This Tool */}
-              <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg max-w-4xl w-full">
-                <h2 className="text-3xl font-bold text-forest mb-6">About This Tool</h2>
-                <div className="h-1 w-20 bg-mahogany mb-6"></div>
+              <div className="text-center mb-8">
+                <h2 className="text-4xl font-bold text-forest mb-4">About This Tool</h2>
+                <div className="h-1 w-20 bg-mahogany mx-auto mb-8"></div>
 
-                <p className="text-xl text-forest-dark mb-4 font-redhat">
-                  Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
-                  incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
-                  exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
-                </p>
+                <div className="bg-white/70 backdrop-blur-sm p-12 rounded-xl shadow-lg text-center">
+                  <p className="text-xl text-forest-dark mb-6 font-redhat leading-relaxed">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+                    incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud
+                    exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute
+                    irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
+                    pariatur.
+                  </p>
 
-                <p className="text-xl text-forest-dark mb-4 font-redhat">
-                  Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu
-                  fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-                  culpa qui officia deserunt mollit anim id est laborum.
-                </p>
-
-                <p className="text-xl text-forest-dark mb-8 font-redhat">
-                  Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium
-                  doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore
-                  veritatis et quasi architecto beatae vitae dicta sunt explicabo. This research is
-                  supported by the Wilkes Center for Climate Science and Policy.
-                </p>
+                  <p className="text-xl text-forest-dark font-redhat leading-relaxed">
+                    Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt
+                    mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit
+                    voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab
+                    illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+                  </p>
+                </div>
               </div>
             </div>
           )}
 
           {activeSection === 'feedback' && (
-            <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg">
+            <div className="bg-white/70 backdrop-blur-sm p-8 rounded-xl shadow-lg max-w-4xl w-full">
               <h2 className="text-3xl font-bold text-forest mb-6">Submit Feedback</h2>
               <div className="h-1 w-20 bg-mahogany mb-6"></div>
 
